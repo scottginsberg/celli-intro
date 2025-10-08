@@ -26,6 +26,9 @@
     .quote__lookWrap.quote__lookWrap--hidden { opacity:0; transform:translateY(0.45em); pointer-events:none; min-width:0; width:0; margin:0; }
     .quote__look { font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; text-transform:uppercase; }
     .quote.quote--loom { font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; }
+    .floatingK { position:fixed; left:0; top:0; display:none; pointer-events:none; font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; text-transform:uppercase; font-weight:300; font-size:16px; color:var(--fg); opacity:0; transform:translate(-50%, -50%) translate(var(--floating-k-tx, 0), var(--floating-k-ty, 0)); transition: transform 1.05s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.45s ease; z-index:12; }
+    .floatingK.visible { opacity:1; }
+    .floatingK.floatingK--active { will-change: transform, opacity; }
     .quote.visible { animation: fadeInQuote 3s ease-out forwards; display:block !important; visibility:visible; }
     @keyframes fadeInQuote {
       0% { opacity:0; transform:translate(-50%, -50%) translateY(20px); }
@@ -165,12 +168,13 @@
   <div class="hud">
     <div id="quote" class="quote quote--no-look">
       <span id="quoteBefore" class="quote__text quote__text--before">...if you GAZE for long into an abyss, the abyss GAZES also into you.</span>
-      <span id="quoteLookWrap" class="quote__lookWrap quote__lookWrap--hidden"><span id="quoteLook" class="quote__look">LOOK</span></span>
+      <span id="quoteLookWrap" class="quote__lookWrap quote__lookWrap--hidden"><span id="quoteLook" class="quote__look"><span id="quoteLookMain">LOO</span><span id="quoteLookLast">K</span></span></span>
       <span id="quoteAfter" class="quote__text quote__text--after"></span>
     </div>
     <div id="loomworks" class="loomworks" aria-live="polite">
       <span id="loomPre" class="loomworks-chunk">L</span><span id="loomCore" class="loomworks-chunk">OO</span><span id="loomPost" class="loomworks-chunk">K</span><span id="loomTail" class="loomworks-chunk"></span>
     </div>
+    <span id="floatingK" class="floatingK" aria-hidden="true">K</span>
     <div class="vignette"></div>
   </div>
   <div id="screenGlitch" class="screenGlitch"></div>
@@ -183,7 +187,7 @@
   </div>
   
   <!-- Hidden input for mobile keyboard -->
-  <input id="hiddenInput" type="text" style="position:absolute; left:-9999px; opacity:0;" autocomplete="off" />
+  <input id="hiddenInput" type="text" style="position:absolute; left:-9999px; opacity:0;" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" enterkeyhint="done" />
   
   <audio id="chime" preload="auto">
     <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
@@ -211,6 +215,7 @@
     import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
     import { AfterimagePass } from "three/examples/jsm/postprocessing/AfterimagePass.js";
     import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+    import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
     // --- Debug helpers ------------------------------------------------------
     const toastEl = document.getElementById('toast');
@@ -231,12 +236,15 @@
     const quoteBefore = document.getElementById('quoteBefore');
     const quoteAfter = document.getElementById('quoteAfter');
     const quoteLook = document.getElementById('quoteLook');
+    const quoteLookMain = document.getElementById('quoteLookMain');
+    const quoteLookLast = document.getElementById('quoteLookLast');
     const quoteLookWrap = document.getElementById('quoteLookWrap');
     const loomworksEl = document.getElementById('loomworks');
     const loomPre = document.getElementById('loomPre');
     const loomCore = document.getElementById('loomCore');
     const loomPost = document.getElementById('loomPost');
     const loomTail = document.getElementById('loomTail');
+    const floatingKEl = document.getElementById('floatingK');
     const quoteStates = {
         initial: {
             before: '...if you GAZE for long into an abyss, the abyss GAZES also into you.',
@@ -258,6 +266,31 @@
         }
     };
     let lookAnchorPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let lookKPosition = null;
+    let lookKSlideStarted = false;
+
+    function getQuoteLookText(){
+        if (!quoteLookMain || !quoteLookLast) return quoteLook ? quoteLook.textContent || '' : '';
+        return `${quoteLookMain.textContent || ''}${quoteLookLast.textContent || ''}`;
+    }
+
+    function setQuoteLookText(text){
+        if (!quoteLookMain || !quoteLookLast) {
+            if (quoteLook) quoteLook.textContent = text || '';
+            return;
+        }
+        const safe = text || '';
+        if (safe.length <= 1) {
+            quoteLookMain.textContent = '';
+            quoteLookLast.textContent = safe;
+        } else {
+            quoteLookMain.textContent = safe.slice(0, -1);
+            quoteLookLast.textContent = safe.slice(-1);
+        }
+        if (quoteLookWrap && !quoteLookWrap.classList.contains('quote__lookWrap--hidden')) {
+            requestAnimationFrame(captureLookAnchorPosition);
+        }
+    }
 
     applyQuoteState(quoteStates.initial, { immediate: true });
     quoteEl.classList.remove('quote--loom');
@@ -404,7 +437,21 @@
         opacity: 0
     });
     
-    // CELLI letter patterns (5x5 grid for each letter)
+        const roundedVoxelGeo = new RoundedBoxGeometry(voxelSize * 1.1, voxelSize * 1.1, voxelSize * 0.3, 5, Math.min(voxelSize * 0.6, 0.06));
+    const roundedEdgesGeo = new THREE.EdgesGeometry(roundedVoxelGeo);
+    const cellShadeBaseMaterial = new THREE.MeshBasicMaterial({
+        color: 0xfff27a,
+        transparent: true,
+        opacity: 0.92,
+        blending: THREE.AdditiveBlending
+    });
+    const cellShadeEdgeMaterial = new THREE.LineBasicMaterial({
+        color: 0xfff9a1,
+        transparent: true,
+        opacity: 0.75
+    });
+
+// CELLI letter patterns (5x5 grid for each letter)
     const celliPatterns = {
         C: [[0,1,1,1,0], [1,0,0,0,0], [1,0,0,0,0], [1,0,0,0,0], [0,1,1,1,0]],
         E: [[1,1,1,1,1], [1,0,0,0,0], [1,1,1,1,0], [1,0,0,0,0], [1,1,1,1,1]],
@@ -475,7 +522,9 @@
                         gridY: rowIdx,     // Row index (0=top, 4=bottom)
                         gridCol: colIdx,   // Column index within letter (0-4)
                         glitched: false,    // Track if this voxel has been glitched out
-                        baseScale: celliScale  // Store scale for proper sizing
+                        baseScale: celliScale,  // Store scale for proper sizing
+                        backspaceTransformed: false,
+                        backspacePulseOffset: Math.random() * Math.PI * 2
                     };
                     
                     // Scale voxel size to match the overall scale
@@ -626,9 +675,14 @@
     let inputAttempted = false;
     let celliGlitchStarted = false;
     let finalRollRotations = [0, 0, 0]; // Store final rotations from roll phase
-    let inputText = '=STAR';
+    const promptBaseText = '=STAR';
+    let inputText = promptBaseText;
     let tEntered = false;
     let burstAnimStarted = false;
+    let burstTimeout = null;
+    let celliBackspaceSequenceStarted = false;
+    let celliBackspaceSequenceTime = 0;
+    let celliBackspaceFlickerTriggered = false;
     const starParticles = []; // Stars from burst voxels
     let loomworksTypingTimeout = null;
     
@@ -661,6 +715,17 @@
             x: rect.left + rect.width / 2,
             y: rect.top + rect.height / 2
         };
+        if (quoteLookLast) {
+            const lastRect = quoteLookLast.getBoundingClientRect();
+            if (lastRect && (lastRect.width || lastRect.height)) {
+                lookKPosition = {
+                    x: lastRect.left + lastRect.width / 2,
+                    y: lastRect.top + lastRect.height / 2,
+                    width: lastRect.width,
+                    height: lastRect.height
+                };
+            }
+        }
         updateLoomworksOffset();
     }
 
@@ -682,7 +747,7 @@
         const initialAfter = quoteAfter.textContent || '';
         const targetBefore = targetState.before || '';
         const targetAfter = targetState.after || '';
-        const targetLook = targetState.look || quoteLook.textContent || '';
+        const targetLook = targetState.look || getQuoteLookText() || '';
         const beforeMax = Math.max(initialBefore.length, targetBefore.length);
         const afterMax = Math.max(initialAfter.length, targetAfter.length);
         const beforeDenom = beforeMax === 0 ? 1 : beforeMax;
@@ -692,7 +757,7 @@
         if (targetState.showLook) {
             quoteEl.classList.remove('quote--no-look');
             quoteLookWrap.classList.remove('quote__lookWrap--hidden');
-            quoteLook.textContent = targetLook;
+            setQuoteLookText(targetLook);
         }
 
         const frame = (now) => {
@@ -729,7 +794,7 @@
             } else {
                 quoteBefore.textContent = targetBefore;
                 quoteAfter.textContent = targetAfter;
-                quoteLook.textContent = targetLook;
+                setQuoteLookText(targetLook);
 
                 if (!targetState.showLook) {
                     quoteLookWrap.classList.add('quote__lookWrap--hidden');
@@ -756,7 +821,7 @@
         if (immediate) {
             quoteBefore.textContent = state.before || '';
             quoteAfter.textContent = state.after || '';
-            quoteLook.textContent = state.look || quoteLook.textContent || '';
+            setQuoteLookText(state.look || getQuoteLookText() || '');
             if (state.showLook) {
                 quoteEl.classList.remove('quote--no-look');
                 quoteLookWrap.classList.remove('quote__lookWrap--hidden');
@@ -792,6 +857,69 @@
         loomworksTypingTimeout = setTimeout(() => typeLoomTail(text, index + 1), baseDelay + jitter);
     }
 
+    function slideLookKToLoomworks() {
+        if (lookKSlideStarted) return;
+        if (!floatingKEl || !loomPost) return;
+        if (!lookKPosition) {
+            captureLookAnchorPosition();
+            if (!lookKPosition) return;
+        }
+
+        const targetRect = loomPost.getBoundingClientRect();
+        if (!targetRect || (!targetRect.width && !targetRect.height)) return;
+
+        lookKSlideStarted = true;
+
+        const startX = lookKPosition.x;
+        const startY = lookKPosition.y;
+        const targetX = targetRect.left + targetRect.width / 2;
+        const targetY = targetRect.top + targetRect.height / 2;
+
+        const lookStyle = quoteLook ? window.getComputedStyle(quoteLook) : null;
+        if (lookStyle) {
+            floatingKEl.style.fontSize = lookStyle.fontSize;
+            floatingKEl.style.letterSpacing = lookStyle.letterSpacing;
+        }
+
+        floatingKEl.style.display = 'block';
+        floatingKEl.textContent = quoteLookLast ? (quoteLookLast.textContent || 'K') : 'K';
+        floatingKEl.style.left = `${startX}px`;
+        floatingKEl.style.top = `${startY}px`;
+        floatingKEl.style.setProperty('--floating-k-tx', '0px');
+        floatingKEl.style.setProperty('--floating-k-ty', '0px');
+        floatingKEl.classList.add('floatingK--active');
+
+        if (quoteLookLast) {
+            quoteLookLast.style.opacity = '0';
+        }
+
+        requestAnimationFrame(() => {
+            floatingKEl.classList.add('visible');
+            const dx = targetX - startX;
+            const dy = targetY - startY;
+            floatingKEl.style.setProperty('--floating-k-tx', `${dx}px`);
+            floatingKEl.style.setProperty('--floating-k-ty', `${dy}px`);
+        });
+
+        const handleTransitionEnd = (event) => {
+            if (event.propertyName && !event.propertyName.includes('transform')) return;
+            floatingKEl.removeEventListener('transitionend', handleTransitionEnd);
+            floatingKEl.classList.remove('visible');
+            setTimeout(() => {
+                floatingKEl.style.display = 'none';
+                floatingKEl.classList.remove('floatingK--active');
+                floatingKEl.style.setProperty('--floating-k-tx', '0px');
+                floatingKEl.style.setProperty('--floating-k-ty', '0px');
+            }, 480);
+        };
+
+        floatingKEl.addEventListener('transitionend', handleTransitionEnd);
+
+        setTimeout(() => {
+            floatingKEl.classList.remove('visible');
+        }, 1400);
+    }
+
     function startLoomworksReveal() {
         if (loomworksRevealStarted) return;
         loomworksRevealStarted = true;
@@ -823,6 +951,10 @@
             loomPost.classList.add('selected');
             loomPost.style.opacity = '0.2';
         }, 980);
+
+        setTimeout(() => {
+            slideLookKToLoomworks();
+        }, 860);
 
         setTimeout(() => {
             loomPost.textContent = 'm';
@@ -1030,40 +1162,119 @@
                     playVoxelChime();
                 }
             } else {
-                // Jiggle and flicker phase
                 const settleAge = celliTime - data.settleTime;
-                
-                // Jiggle (dampens over time)
+
                 const jiggleFactor = Math.max(0, 1 - settleAge * 0.5);
                 data.jigglePhase += dt * 20;
                 const jiggleX = Math.sin(data.jigglePhase) * 0.003 * jiggleFactor;
                 const jiggleY = Math.cos(data.jigglePhase * 1.3) * 0.002 * jiggleFactor;
-                voxel.position.x = data.targetX + jiggleX;
-                voxel.position.y = data.targetY + jiggleY;
-                
-                // Subtle scale bounce on landing for impact
+
+                let posX = data.targetX + jiggleX;
+                let posY = data.targetY + jiggleY;
+
                 const scaleBounce = settleAge < 0.3 ? 1.0 + (1.0 - settleAge / 0.3) * 0.15 : 1.0;
-                const finalScale = data.baseScale * scaleBounce;
-                voxel.scale.set(finalScale, finalScale, finalScale);
-                
-                // Flicker (gets brighter over time) - start very dim
-                data.flickerPhase += dt * 8;
-                const brightProgress = Math.min(1, settleAge * 0.25);  // Slower brightening
-                const flickerBase = THREE.MathUtils.lerp(0.1, 0.8, brightProgress);  // Start at 0.1, max 0.8
-                const flickerWave = Math.sin(data.flickerPhase) * 0.15;
-                voxel.material.opacity = flickerBase + flickerWave;
-                
-                // Gradually brighten the voxel color from dim gray to bright white
-                const colorBrightness = THREE.MathUtils.lerp(0.2, 1.0, brightProgress);
-                const r = Math.floor(colorBrightness * 255);
-                voxel.material.color.setRGB(colorBrightness, colorBrightness, colorBrightness);
-                
-                // Keep edges visible but subtle
-                data.edges.material.opacity = THREE.MathUtils.lerp(0.4, 0.3, brightProgress);
+                let scaleValue = data.baseScale * scaleBounce;
+
+                data.flickerPhase += dt * 8;
+                const brightProgress = Math.min(1, settleAge * 0.25);
+                let opacityTarget = THREE.MathUtils.lerp(0.1, 0.8, brightProgress) + Math.sin(data.flickerPhase) * 0.15;
+                let edgeOpacity = THREE.MathUtils.lerp(0.4, 0.3, brightProgress);
+                let baseColor = THREE.MathUtils.lerp(0.2, 1.0, brightProgress);
+
+                let pulseTime = 0;
+                let reactionActive = false;
+
+                if (celliBackspaceSequenceStarted && t >= celliBackspaceSequenceTime) {
+                    reactionActive = true;
+                    const reactionElapsed = t - celliBackspaceSequenceTime;
+                    const vibrateDuration = 1.1;
+                    if (reactionElapsed < vibrateDuration) {
+                        const intensity = THREE.MathUtils.lerp(0.08, 0.0, reactionElapsed / vibrateDuration);
+                        posX += (Math.random() - 0.5) * intensity;
+                        posY += (Math.random() - 0.5) * intensity;
+                        opacityTarget = Math.min(1, opacityTarget + 0.2);
+                        edgeOpacity = Math.min(0.85, edgeOpacity + 0.25);
+                        baseColor = Math.min(1.0, baseColor + 0.2);
+                    } else {
+                        pulseTime = reactionElapsed - vibrateDuration;
+                        if (!data.backspaceTransformed) {
+                            data.backspaceTransformed = true;
+                            voxel.geometry = roundedVoxelGeo.clone();
+                            const newMat = cellShadeBaseMaterial.clone();
+                            voxel.material.dispose();
+                            voxel.material = newMat;
+                            if (data.edges) {
+                                voxel.remove(data.edges);
+                            }
+                            const newEdges = new THREE.LineSegments(roundedEdgesGeo, cellShadeEdgeMaterial.clone());
+                            voxel.add(newEdges);
+                            data.edges = newEdges;
+                        }
+                        const pulse = 1 + 0.08 * Math.sin(pulseTime * 4 + data.backspacePulseOffset);
+                        scaleValue = data.baseScale * pulse;
+                        opacityTarget = 0.88 + 0.08 * Math.sin(pulseTime * 3 + data.backspacePulseOffset);
+                        edgeOpacity = 0.78 + 0.12 * Math.sin(pulseTime * 5 + data.backspacePulseOffset);
+                        posX += Math.sin(pulseTime * 2 + data.backspacePulseOffset) * 0.008;
+                        posY += Math.cos(pulseTime * 2.2 + data.backspacePulseOffset) * 0.008;
+                        baseColor = 1.0;
+                    }
+                }
+
+                voxel.position.x = posX;
+                voxel.position.y = posY;
+                voxel.scale.set(scaleValue, scaleValue, scaleValue);
+
+                if (voxel.material) {
+                    if (data.backspaceTransformed && reactionActive && (t - celliBackspaceSequenceTime) > 1.1) {
+                        const yellowPulse = 0.9 + 0.1 * Math.sin(pulseTime * 2 + data.backspacePulseOffset);
+                        voxel.material.opacity = THREE.MathUtils.clamp(opacityTarget, 0.4, 1.0);
+                        voxel.material.color.setRGB(1.0, 0.95, 0.35 + 0.1 * yellowPulse);
+                    } else {
+                        voxel.material.opacity = opacityTarget;
+                        voxel.material.color.setRGB(baseColor, baseColor, baseColor);
+                    }
+                }
+
+                if (data.edges && data.edges.material) {
+                    data.edges.material.opacity = THREE.MathUtils.clamp(edgeOpacity, 0, 1);
+                }
             }
         });
     }
-    
+
+    function triggerCelliBackspaceReaction() {
+        if (celliBackspaceSequenceStarted || burstAnimStarted) return;
+
+        celliBackspaceSequenceStarted = true;
+        celliBackspaceSequenceTime = totalTime;
+
+        const active = voxels.filter(v => v.visible && !v.userData.glitched);
+        if (!celliBackspaceFlickerTriggered && active.length) {
+            celliBackspaceFlickerTriggered = true;
+            const target = active[Math.floor(Math.random() * active.length)];
+            if (target) {
+                let flickers = 0;
+                const mat = target.material;
+                const edgeMaterial = target.userData.edges ? target.userData.edges.material : null;
+                const baseOpacity = mat.opacity;
+                const baseEdgeOpacity = edgeMaterial ? edgeMaterial.opacity : 0;
+                const interval = setInterval(() => {
+                    const on = flickers % 2 === 0;
+                    mat.opacity = on ? 1 : Math.max(0.1, baseOpacity * 0.2);
+                    if (edgeMaterial) {
+                        edgeMaterial.opacity = on ? Math.min(0.9, baseEdgeOpacity + 0.3) : Math.max(0.1, baseEdgeOpacity * 0.3);
+                    }
+                    flickers += 1;
+                    if (flickers > 4) {
+                        clearInterval(interval);
+                        mat.opacity = baseOpacity;
+                        if (edgeMaterial) edgeMaterial.opacity = baseEdgeOpacity;
+                    }
+                }, 90);
+            }
+        }
+    }
+
     // CELLI glitch and degradation
     function triggerCelliGlitch() {
         if (celliGlitchStarted) return;
@@ -1252,18 +1463,44 @@
             triMesh.visible = false;
         } else if (phase === 'transition') {
             const transProgress = (t - introCfg.triangleEnd) / (introCfg.transitionEnd - introCfg.triangleEnd);
-            bloomPass.strength = 0.7; // Continue from triangle
+            const morphProgress = THREE.MathUtils.clamp((transProgress - 0.5) / 0.5, 0, 1);
+            bloomPass.strength = THREE.MathUtils.lerp(0.3, 0.42, morphProgress);
             afterimagePass.uniforms.damp.value = THREE.MathUtils.lerp(0.92, 0.96, transProgress);
             filmPass.uniforms.noise.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
             filmPass.uniforms.scanAmp.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
             triMesh.visible = false;
+            triMesh.material.opacity = 0;
         } else if (phase === 'normal') {
-            bloomPass.strength = 0.7; // Full glow
-            afterimagePass.uniforms.damp.value = 0.96; // Full trail
-            filmPass.uniforms.noise.value = 0.03; // Full grain
-            filmPass.uniforms.scanAmp.value = 0.03; // Full scanlines
-            triMesh.visible = true;
-            triMesh.material.opacity = 0.7;
+            const normalT = t - introCfg.transitionEnd;
+            const convergeDuration = 2.2;
+            const repelDuration = 1.6;
+
+            let triangleOpacity = 0;
+            let bloomStrength = 0.7;
+
+            if (normalT < convergeDuration) {
+                const convergeProgress = THREE.MathUtils.clamp(normalT / convergeDuration, 0, 1);
+                const convergeEased = convergeProgress * convergeProgress * (3 - 2 * convergeProgress);
+                bloomStrength = THREE.MathUtils.lerp(0.42, 0.9, convergeEased);
+                triMesh.visible = false;
+                triangleOpacity = 0;
+            } else if (normalT < convergeDuration + repelDuration) {
+                const repelProgress = THREE.MathUtils.clamp((normalT - convergeDuration) / repelDuration, 0, 1);
+                const repelEased = 1 - Math.pow(1 - repelProgress, 3);
+                bloomStrength = THREE.MathUtils.lerp(0.9, 0.72, repelEased);
+                triMesh.visible = true;
+                triangleOpacity = THREE.MathUtils.lerp(0, 0.7, repelEased);
+            } else {
+                triMesh.visible = true;
+                triangleOpacity = 0.7;
+                bloomStrength = 0.72;
+            }
+
+            bloomPass.strength = bloomStrength;
+            afterimagePass.uniforms.damp.value = 0.96;
+            filmPass.uniforms.noise.value = 0.03;
+            filmPass.uniforms.scanAmp.value = 0.03;
+            triMesh.material.opacity = triangleOpacity;
         } else if (phase === 'venn') {
             // Settle into clear venn diagram
             const vennProgress = (t - introCfg.normalEnd) / (introCfg.vennEnd - introCfg.normalEnd);
@@ -1706,44 +1943,67 @@
             blackHole.visible = true;
             blackHole.material.uniforms.pulseFactor.value = THREE.MathUtils.lerp(0.4, 0.5, eased);
             
-        } else if (phase === 'normal') {
-            // Normal pulsing/converging animation
-            const normalT = t - introCfg.transitionEnd;
-            const pulseFactor = 0.5 + 0.5 * Math.sin(normalT * motionCfg.speed);
-        const currentDist = motionCfg.maxDist * pulseFactor;
-        const scale = THREE.MathUtils.lerp(motionCfg.minScale, 1.0, pulseFactor);
+        } else if (phase === 'normal') {
+            const normalT = t - introCfg.transitionEnd;
+            const convergeDuration = 2.2;
+            const repelDuration = 1.6;
+            const overlapDist = 0.02;
+            const transitionEndDist = motionCfg.maxDist * 0.5;
+            const postRepelDist = motionCfg.maxDist * 0.72;
 
-            // Continue from where transition left off - use equilateral angles
-            const centerY = 0;
-            
+            const centerY = 0;
             const triangleAngles = [
                 Math.PI / 2 + (2 * Math.PI / 3) * 0,
                 Math.PI / 2 + (2 * Math.PI / 3) * 1,
                 Math.PI / 2 + (2 * Math.PI / 3) * 2
             ];
-            
-            // Start from where transition ended: 0.2 + 2π
             const transitionEndRotation = 0.2 + Math.PI * 2;
             const rotation = transitionEndRotation + (normalT * motionCfg.rotationSpeed);
-
-            // Use same mapping as triangle phase
             const triangleMapping = [1, 0, 2];
 
-        for (let i = 0; i < 3; i++) {
+            let currentDist = transitionEndDist;
+            let scale = motionCfg.minScale;
+            let pulseFactorValue = 0.5;
+
+            if (normalT < convergeDuration) {
+                const convergeProgress = THREE.MathUtils.clamp(normalT / convergeDuration, 0, 1);
+                const convergeEased = convergeProgress * convergeProgress * (3 - 2 * convergeProgress);
+                currentDist = THREE.MathUtils.lerp(transitionEndDist, overlapDist, convergeEased);
+                scale = THREE.MathUtils.lerp(1.0, 0.82, convergeEased);
+                pulseFactorValue = THREE.MathUtils.lerp(0.5, 0.95, convergeEased);
+            } else if (normalT < convergeDuration + repelDuration) {
+                const repelProgress = THREE.MathUtils.clamp((normalT - convergeDuration) / repelDuration, 0, 1);
+                const repelEased = 1 - Math.pow(1 - repelProgress, 3);
+                currentDist = THREE.MathUtils.lerp(overlapDist, postRepelDist, repelEased);
+                scale = THREE.MathUtils.lerp(0.82, 0.94, repelEased);
+                pulseFactorValue = THREE.MathUtils.lerp(0.95, 0.6, repelEased);
+            } else {
+                const pulseTime = normalT - (convergeDuration + repelDuration);
+                const basePulse = 0.5 + 0.5 * Math.sin(pulseTime * motionCfg.speed);
+                const blendDuration = 1.4;
+                const blend = Math.min(pulseTime / blendDuration, 1);
+                const targetDist = motionCfg.maxDist * basePulse;
+                currentDist = THREE.MathUtils.lerp(postRepelDist, targetDist, blend);
+                const targetScale = THREE.MathUtils.lerp(motionCfg.minScale, 1.0, basePulse);
+                scale = THREE.MathUtils.lerp(0.94, targetScale, blend);
+                pulseFactorValue = basePulse;
+            }
+
+            for (let i = 0; i < 3; i++) {
                 const angleIndex = triangleMapping[i];
                 const angle = triangleAngles[angleIndex] + rotation;
-            const p = new THREE.Vector2(
-                Math.cos(angle) * currentDist,
-                    Math.sin(angle) * currentDist + centerY
-            );
-            spheres[i].position.set(p.x, p.y, -i * 0.002);
-                spheres[i].rotation.z = 0;
-            spheres[i].scale.set(scale, scale, scale);
-            triMat.uniforms.points.value[i].copy(p);
-        }
-            blackHole.visible = true;
-        blackHole.material.uniforms.pulseFactor.value = pulseFactor;
-            
+                const p = new THREE.Vector2(
+                    Math.cos(angle) * currentDist,
+                    Math.sin(angle) * currentDist + centerY
+                );
+                spheres[i].position.set(p.x, p.y, -i * 0.002);
+                spheres[i].rotation.z = 0;
+                spheres[i].scale.set(scale, scale, scale);
+                triMat.uniforms.points.value[i].copy(p);
+            }
+            blackHole.visible = true;
+            blackHole.material.uniforms.pulseFactor.value = pulseFactorValue;
+
         } else if (phase === 'venn') {
             // Slow down and form clear venn diagram
             const vennProgress = (t - introCfg.normalEnd) / (introCfg.vennEnd - introCfg.normalEnd);
@@ -1942,17 +2202,18 @@
               data.targetX *= scaleRatio;
               data.targetY *= scaleRatio;
               data.baseScale = celliScale;
-              
+
               // Update actual positions if settled
               if (data.settled) {
                   voxel.position.x = data.targetX;
                   voxel.position.y = data.targetY;
               }
-              
+
               // Update scale
               voxel.scale.set(celliScale, celliScale, celliScale);
           });
       }
+      requestAnimationFrame(captureLookAnchorPosition);
     }
     window.addEventListener('resize', onResize);
     onResize();
@@ -2424,38 +2685,93 @@
     const promptTextEl = document.getElementById('promptText');
     const promptCursorEl = document.getElementById('promptCursor');
     const hiddenInput = document.getElementById('hiddenInput');
+    const promptEl = document.querySelector('.prompt');
     
     // Click to trigger CELLI glitch (reveal T) and focus hidden input for mobile
     if (promptContainer) {
-        promptContainer.addEventListener('click', () => {
-            if (!running || inputAttempted) return;
-            triggerCelliGlitch();
-            inputAttempted = true;
-            
-            // Focus hidden input for mobile keyboard
-            if (hiddenInput) {
-                hiddenInput.value = '';
+        function focusHiddenPromptInput() {
+            if (!hiddenInput) return;
+
+            hiddenInput.value = '';
+
+            const focusOptions = { preventScroll: true };
+            try {
+                hiddenInput.focus(focusOptions);
+            } catch (err) {
                 hiddenInput.focus();
+            }
+
+            if (document.activeElement !== hiddenInput) {
+                hiddenInput.focus();
+            }
+        }
+
+        promptContainer.addEventListener('click', () => {
+            if (!running || burstAnimStarted) return;
+            if (!inputAttempted) {
+                triggerCelliGlitch();
+                inputAttempted = true;
+            }
+
+            if (hiddenInput) {
+                focusHiddenPromptInput();
             }
         });
         
+        function handlePromptBackspace() {
+            if (!running || !doorwayOpened || burstAnimStarted) return false;
+            if (inputText.length <= promptBaseText.length) return false;
+
+            inputText = inputText.slice(0, -1);
+            tEntered = false;
+
+            promptTextEl.textContent = inputText;
+            promptCursorEl.textContent = '_';
+            if (promptEl) {
+                promptEl.setAttribute('data-text', inputText + '_');
+            }
+
+            if (hiddenInput) {
+                hiddenInput.value = '';
+            }
+
+            if (burstTimeout) {
+                clearTimeout(burstTimeout);
+                burstTimeout = null;
+            }
+
+            triggerCelliBackspaceReaction();
+            return true;
+        }
+
         // Keyboard input to trigger final sequence (desktop)
         window.addEventListener('keydown', (e) => {
-            if (!running || !doorwayOpened || !inputAttempted || tEntered) return;
-            
-            // Only accept 'T' or 't' after clicking
+            if (!running || !doorwayOpened || !inputAttempted) return;
+
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                handlePromptBackspace();
+                return;
+            }
+
+            if (tEntered) return;
+
             if (e.key.toLowerCase() === 't') {
                 e.preventDefault();
                 tEntered = true;
                 inputText += 'T';
-                
+
                 // Update display
                 promptTextEl.textContent = inputText;
                 promptCursorEl.textContent = '_';
-                document.querySelector('.prompt').setAttribute('data-text', inputText + '_');
-                
-                // Trigger burst animation
-                setTimeout(() => {
+                if (promptEl) {
+                    promptEl.setAttribute('data-text', inputText + '_');
+                }
+
+                if (burstTimeout) {
+                    clearTimeout(burstTimeout);
+                }
+                burstTimeout = setTimeout(() => {
                     triggerBurstToStars();
                 }, 500);
             }
@@ -2464,26 +2780,43 @@
         // Mobile input handler
         if (hiddenInput) {
             hiddenInput.addEventListener('input', (e) => {
-                if (!running || !doorwayOpened || !inputAttempted || tEntered) return;
+                if (!running || !doorwayOpened || !inputAttempted) return;
 
-                const value = e.target.value.toUpperCase();
+                const value = (e.target.value || '').toUpperCase();
+
+                if (value === '') {
+                    handlePromptBackspace();
+                    return;
+                }
+
+                if (tEntered) {
+                    e.target.value = '';
+                    return;
+                }
+
                 if (value.includes('T')) {
                     e.preventDefault();
                     tEntered = true;
                     inputText += 'T';
 
-                    // Update display
                     promptTextEl.textContent = inputText;
                     promptCursorEl.textContent = '_';
-                    document.querySelector('.prompt').setAttribute('data-text', inputText + '_');
+                    if (promptEl) {
+                        promptEl.setAttribute('data-text', inputText + '_');
+                    }
 
-                    // Blur input
-                    hiddenInput.blur();
+                    e.target.value = '';
 
-                    // Trigger burst animation
-                    setTimeout(() => {
+                    if (burstTimeout) {
+                        clearTimeout(burstTimeout);
+                    }
+                    burstTimeout = setTimeout(() => {
                         triggerBurstToStars();
                     }, 500);
+
+                    hiddenInput.blur();
+                } else {
+                    e.target.value = '';
                 }
             });
         }
@@ -2502,6 +2835,7 @@
     function triggerBurstToStars() {
         if (burstAnimStarted) return;
         burstAnimStarted = true;
+        burstTimeout = null;
         breakApartStarted = true;
         riseStartTime = Date.now();
         
@@ -2509,7 +2843,6 @@
         afterimagePass.uniforms.damp.value = 0.88;
         
         // Hide prompt but keep it for reference
-        const promptEl = document.querySelector('.prompt');
         if (promptEl) {
             promptEl.style.transition = 'opacity 0.5s ease';
             promptEl.style.opacity = '0';
