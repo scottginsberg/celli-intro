@@ -14,6 +14,7 @@
     .hud { position:fixed; inset:0; pointer-events:none; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
     .brand { position:absolute; left:2rem; bottom:2rem; color:var(--fg); letter-spacing:0.08em; font-weight:600; font-size:12px; opacity:.65; text-transform:uppercase; }
     .quote { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:var(--fg); font-weight:300; font-size:16px; letter-spacing:0.03em; line-height:1.6; max-width:560px; width:90%; text-align:center; font-style:italic; margin:0; padding:0 20px; box-sizing:border-box; z-index:10; visibility:hidden; opacity:0; transition: color 0.45s ease, text-shadow 0.45s ease; }
+    .quote.quote--loom { font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; }
     .quote.visible { animation: fadeInQuote 3s ease-out forwards; display:block !important; visibility:visible; }
     @keyframes fadeInQuote {
       0% { opacity:0; transform:translate(-50%, -50%) translateY(20px); }
@@ -46,7 +47,7 @@
       85% { opacity:.6; transform:translate(-50%, -50%) translateX(8px) translateY(-4px); text-shadow: -7px 0 #ff1e6e, 6px 0 #00a8ff; }
       100% { opacity:.5; transform:translate(-50%, -50%) translateX(0) translateY(0); text-shadow: 0 0 0 transparent; }
     }
-    .loomworks { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:#fff; font-weight:300; font-size:20px; letter-spacing:0.15em; opacity:0; text-align:center; pointer-events:none; }
+    .loomworks { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:#fff; font-weight:300; font-size:20px; letter-spacing:0.15em; opacity:0; text-align:center; pointer-events:none; font-family:'Roboto Mono', ui-monospace, monospace; white-space:nowrap; }
     .loomworks.visible { animation: fadeInLoom 2s ease-out forwards; }
     .loomworks-chunk { display:inline-block; padding:0 0.08em; opacity:0; transform:translateY(12px); transition: opacity 0.45s ease, transform 0.45s ease, background 0.25s ease, color 0.25s ease; }
     .loomworks.visible .loomworks-chunk { opacity:1; transform:translateY(0); }
@@ -220,6 +221,7 @@
     const lookQuote = '...if you LOOK for long into an abyss, the abyss LOOKS also into you.';
     const despairQuote = 'LOOK on my works, ye Mighty, and despair!';
     quoteEl.textContent = initialQuote;
+    quoteEl.classList.remove('quote--loom');
     loomTail.textContent = '';
     const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -612,7 +614,7 @@
 
     const glitchGlyphs = "!<>-_\\/[]{}—=+*^?#▒▓█▞▚";
 
-    function glitchSwapText(el, target, { duration = 1100 } = {}) {
+    function glitchSwapText(el, target, { duration = 1100, onComplete = null } = {}) {
         if (!el || el.dataset.swapping === '1') return;
         el.dataset.swapping = '1';
         const initial = el.textContent || '';
@@ -644,6 +646,9 @@
                 el.textContent = target;
                 el.classList.remove('scrambling');
                 delete el.dataset.swapping;
+                if (typeof onComplete === 'function') {
+                    onComplete();
+                }
             }
         };
 
@@ -713,11 +718,15 @@
         }, 1340);
 
         setTimeout(() => {
-            if (loomworksTypingTimeout) {
-                clearTimeout(loomworksTypingTimeout);
-            }
-            typeLoomTail('works Experience.');
-        }, 1500);
+            loomTail.classList.add('selected');
+            setTimeout(() => {
+                loomTail.classList.remove('selected');
+                if (loomworksTypingTimeout) {
+                    clearTimeout(loomworksTypingTimeout);
+                }
+                typeLoomTail('works Experience.');
+            }, 260);
+        }, 1380);
     }
     
     function createTextParticle(x, y, text, color, sourceIndex) {
@@ -1158,7 +1167,7 @@
             }
 
             if (collapseProgress > 0.45 && !quoteLookSwapped) {
-                glitchSwapText(quoteEl, lookQuote, { duration: 1200 });
+                glitchSwapText(quoteEl, lookQuote, { duration: 1200, onComplete: () => quoteEl.classList.remove('quote--loom') });
                 quoteLookSwapped = true;
             }
 
@@ -1186,7 +1195,7 @@
             }
 
             if (glitchProgress > 0.25 && !quoteDespairShown) {
-                glitchSwapText(quoteEl, despairQuote, { duration: 950 });
+                glitchSwapText(quoteEl, despairQuote, { duration: 950, onComplete: () => quoteEl.classList.add('quote--loom') });
                 quoteDespairShown = true;
             }
 
@@ -1210,6 +1219,7 @@
                 quoteEl.classList.remove('glitch', 'glitchMedium', 'glitchIntense', 'scrambling');
                 quoteEl.style.visibility = 'hidden';
                 quoteEl.style.opacity = '0';
+                quoteEl.classList.remove('quote--loom');
                 document.getElementById('screenGlitch').classList.remove('active');
                 blackoutStarted = true;
             }
@@ -1719,7 +1729,7 @@
             }
             
             if (collapseProgress > 0.45 && !quoteLookSwapped) {
-                glitchSwapText(quoteEl, lookQuote, { duration: 1200 });
+                glitchSwapText(quoteEl, lookQuote, { duration: 1200, onComplete: () => quoteEl.classList.remove('quote--loom') });
                 quoteLookSwapped = true;
             }
             
@@ -1743,7 +1753,7 @@
                 const glitchProgress = (t - introCfg.collapseEnd) / (introCfg.glitchEnd - introCfg.collapseEnd);
                 sphereOpacity = THREE.MathUtils.lerp(1.0, 0, glitchProgress);
                 if (glitchProgress > 0.25 && !quoteDespairShown) {
-                    glitchSwapText(quoteEl, despairQuote, { duration: 950 });
+                    glitchSwapText(quoteEl, despairQuote, { duration: 950, onComplete: () => quoteEl.classList.add('quote--loom') });
                     quoteDespairShown = true;
                 }
             } else {
