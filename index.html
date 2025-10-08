@@ -13,13 +13,14 @@
     #app { position:fixed; inset:0; background:var(--bg); }
     .hud { position:fixed; inset:0; pointer-events:none; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
     .brand { position:absolute; left:2rem; bottom:2rem; color:var(--fg); letter-spacing:0.08em; font-weight:600; font-size:12px; opacity:.65; text-transform:uppercase; }
-    .quote { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:var(--fg); font-weight:300; font-size:16px; letter-spacing:0.03em; line-height:1.6; max-width:560px; width:90%; text-align:center; font-style:italic; margin:0; padding:0 20px; box-sizing:border-box; z-index:10; visibility:hidden; opacity:0; }
-    .quote.visible { animation: fadeInQuote 3s ease-out forwards; display:block !important; }
-    @keyframes fadeInQuote { 
-      0% { opacity:0; transform:translate(-50%, -50%) translateY(20px); } 
-      100% { opacity:.85; transform:translate(-50%, -50%) translateY(0); } 
+    .quote { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:var(--fg); font-weight:300; font-size:16px; letter-spacing:0.03em; line-height:1.6; max-width:560px; width:90%; text-align:center; font-style:italic; margin:0; padding:0 20px; box-sizing:border-box; z-index:10; visibility:hidden; opacity:0; transition: color 0.45s ease, text-shadow 0.45s ease; }
+    .quote.visible { animation: fadeInQuote 3s ease-out forwards; display:block !important; visibility:visible; }
+    @keyframes fadeInQuote {
+      0% { opacity:0; transform:translate(-50%, -50%) translateY(20px); }
+      100% { opacity:.85; transform:translate(-50%, -50%) translateY(0); }
     }
     .quote.glitch { animation: glitchText 0.5s ease-in-out infinite; }
+    .quote.scrambling { text-shadow: 0 0 18px rgba(138, 180, 255, 0.4); color:#f5f5f5; }
     @keyframes glitchText {
       0%, 100% { opacity:.85; transform:translate(-50%, -50%) translateX(0); text-shadow: 0 0 0 transparent; }
       10% { opacity:.8; transform:translate(-50%, -50%) translateX(-1px); text-shadow: 1px 0 #ff1e6e, -1px 0 #00a8ff; }
@@ -45,8 +46,12 @@
       85% { opacity:.6; transform:translate(-50%, -50%) translateX(8px) translateY(-4px); text-shadow: -7px 0 #ff1e6e, 6px 0 #00a8ff; }
       100% { opacity:.5; transform:translate(-50%, -50%) translateX(0) translateY(0); text-shadow: 0 0 0 transparent; }
     }
-    .loomworks { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:#fff; font-weight:300; font-size:20px; letter-spacing:0.15em; opacity:0; text-align:center; }
+    .loomworks { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:#fff; font-weight:300; font-size:20px; letter-spacing:0.15em; opacity:0; text-align:center; pointer-events:none; }
     .loomworks.visible { animation: fadeInLoom 2s ease-out forwards; }
+    .loomworks-chunk { display:inline-block; padding:0 0.08em; opacity:0; transform:translateY(12px); transition: opacity 0.45s ease, transform 0.45s ease, background 0.25s ease, color 0.25s ease; }
+    .loomworks.visible .loomworks-chunk { opacity:1; transform:translateY(0); }
+    .loomworks-chunk.selected { background:#fff; color:#000; box-shadow:0 0 0 1px rgba(0,0,0,0.55); }
+    #loomTail { white-space:pre; }
     @keyframes fadeInLoom {
       0% { opacity:0; transform:translate(-50%, -50%) scale(0.95); }
       100% { opacity:1; transform:translate(-50%, -50%) scale(1); }
@@ -145,8 +150,10 @@
 <body>
   <div id="app" class="scanlines"></div>
   <div class="hud">
-    <div id="quote" class="quote">...if you gaze for long into an abyss, the abyss gazes also into you.</div>
-    <div id="loomworks" class="loomworks">a Loomworks Experience.</div>
+    <div id="quote" class="quote">...if you GAZE for long into an abyss, the abyss GAZES also into you.</div>
+    <div id="loomworks" class="loomworks" aria-live="polite">
+      <span id="loomPre" class="loomworks-chunk">L</span><span id="loomCore" class="loomworks-chunk">OO</span><span id="loomPost" class="loomworks-chunk">K</span><span id="loomTail" class="loomworks-chunk"></span>
+    </div>
     <div class="vignette"></div>
   </div>
   <div id="screenGlitch" class="screenGlitch"></div>
@@ -203,6 +210,17 @@
 
     // --- Core setup ---------------------------------------------------------
     const app = document.getElementById('app');
+    const quoteEl = document.getElementById('quote');
+    const loomworksEl = document.getElementById('loomworks');
+    const loomPre = document.getElementById('loomPre');
+    const loomCore = document.getElementById('loomCore');
+    const loomPost = document.getElementById('loomPost');
+    const loomTail = document.getElementById('loomTail');
+    const initialQuote = '...if you GAZE for long into an abyss, the abyss GAZES also into you.';
+    const lookQuote = '...if you LOOK for long into an abyss, the abyss LOOKS also into you.';
+    const despairQuote = 'LOOK on my works, ye Mighty, and despair!';
+    quoteEl.textContent = initialQuote;
+    loomTail.textContent = '';
     const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -551,12 +569,15 @@
     let lastThunkTime = [0, 0, 0]; // Track last thunk time for each shape
     
     let quoteShown = false;
+    let quoteLookSwapped = false;
+    let quoteDespairShown = false;
     let glitchStarted = false;
     let mediumGlitchStarted = false;
     let intenseGlitchStarted = false;
     let screenGlitchStarted = false;
     let blackoutStarted = false;
     let loomworksShown = false;
+    let loomworksRevealStarted = false;
     let chimePlayed = false;
     let celliStarted = false;
     let doorwayShown = false;
@@ -568,6 +589,7 @@
     let tEntered = false;
     let burstAnimStarted = false;
     const starParticles = []; // Stars from burst voxels
+    let loomworksTypingTimeout = null;
     
     // Text particle system for click interactions
     const textParticles = [];
@@ -583,10 +605,120 @@
         ];
         return formats[Math.floor(Math.random() * formats.length)];
     };
-    const equationTexts = [
-        "x²+y²=r²", "∫f(x)dx", "E=mc²", "∂f/∂x", "Σ(x)", "√(a²+b²)", 
-        "(0,0)", "(x,y,z)", "[1,2,3]", "θ=arctan(y/x)", "∇×F", "dy/dx"
-    ];
+    const equationTexts = [
+        "x²+y²=r²", "∫f(x)dx", "E=mc²", "∂f/∂x", "Σ(x)", "√(a²+b²)",
+        "(0,0)", "(x,y,z)", "[1,2,3]", "θ=arctan(y/x)", "∇×F", "dy/dx"
+    ];
+
+    const glitchGlyphs = "!<>-_\\/[]{}—=+*^?#▒▓█▞▚";
+
+    function glitchSwapText(el, target, { duration = 1100 } = {}) {
+        if (!el || el.dataset.swapping === '1') return;
+        el.dataset.swapping = '1';
+        const initial = el.textContent || '';
+        const maxLen = Math.max(initial.length, target.length);
+        const start = performance.now();
+        el.classList.add('scrambling');
+
+        const frame = (now) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            let result = '';
+            for (let i = 0; i < maxLen; i++) {
+                if (progress > i / maxLen) {
+                    if (i < target.length) {
+                        result += target[i];
+                    }
+                } else {
+                    const fallback = i < initial.length ? initial[i] : '';
+                    const randomChar = glitchGlyphs[Math.floor(Math.random() * glitchGlyphs.length)] || fallback;
+                    result += randomChar;
+                }
+            }
+
+            el.textContent = result;
+
+            if (progress < 1) {
+                requestAnimationFrame(frame);
+            } else {
+                el.textContent = target;
+                el.classList.remove('scrambling');
+                delete el.dataset.swapping;
+            }
+        };
+
+        requestAnimationFrame(frame);
+    }
+
+    function typeLoomTail(text, index = 0) {
+        if (index === 0) {
+            loomTail.textContent = '';
+        }
+
+        if (index >= text.length) {
+            loomworksTypingTimeout = null;
+            return;
+        }
+
+        loomTail.textContent += text[index];
+        const baseDelay = index < 3 ? 110 : 65;
+        const jitter = Math.random() * 55;
+        loomworksTypingTimeout = setTimeout(() => typeLoomTail(text, index + 1), baseDelay + jitter);
+    }
+
+    function startLoomworksReveal() {
+        if (loomworksRevealStarted) return;
+        loomworksRevealStarted = true;
+
+        loomworksEl.classList.add('visible');
+        loomPre.textContent = 'L';
+        loomCore.textContent = 'OO';
+        loomPost.textContent = 'K';
+        loomTail.textContent = '';
+
+        setTimeout(() => {
+            loomCore.classList.add('selected');
+        }, 280);
+
+        setTimeout(() => {
+            loomCore.textContent = 'oo';
+        }, 630);
+
+        setTimeout(() => {
+            loomCore.classList.remove('selected');
+        }, 1080);
+
+        setTimeout(() => {
+            loomPost.classList.add('selected');
+            loomPost.style.opacity = '0.2';
+        }, 980);
+
+        setTimeout(() => {
+            loomPost.textContent = 'm';
+            loomPost.style.opacity = '1';
+        }, 1340);
+
+        setTimeout(() => {
+            loomPost.classList.remove('selected');
+            setTimeout(() => { loomPost.style.opacity = ''; }, 220);
+        }, 1680);
+
+        setTimeout(() => {
+            loomPre.style.opacity = '0';
+        }, 920);
+
+        setTimeout(() => {
+            loomPre.textContent = 'a L';
+            loomPre.style.opacity = '1';
+        }, 1340);
+
+        setTimeout(() => {
+            if (loomworksTypingTimeout) {
+                clearTimeout(loomworksTypingTimeout);
+            }
+            typeLoomTail('works Experience.');
+        }, 1500);
+    }
     
     function createTextParticle(x, y, text, color, sourceIndex) {
         const angle = Math.random() * Math.PI * 2;
@@ -1024,7 +1156,12 @@
                 glitchStarted = true;
                 quoteShown = true;
             }
-            
+
+            if (collapseProgress > 0.45 && !quoteLookSwapped) {
+                glitchSwapText(quoteEl, lookQuote, { duration: 1200 });
+                quoteLookSwapped = true;
+            }
+
             // Increase to medium glitch
             if (collapseProgress > 0.6 && !mediumGlitchStarted) {
                 document.getElementById('quote').classList.remove('glitch');
@@ -1047,7 +1184,12 @@
                 document.getElementById('quote').classList.add('glitchIntense');
                 intenseGlitchStarted = true;
             }
-            
+
+            if (glitchProgress > 0.25 && !quoteDespairShown) {
+                glitchSwapText(quoteEl, despairQuote, { duration: 950 });
+                quoteDespairShown = true;
+            }
+
             // Screen glitch in middle
             if (glitchProgress > 0.4 && !screenGlitchStarted) {
                 document.getElementById('screenGlitch').classList.add('active');
@@ -1065,7 +1207,7 @@
             if (!blackoutStarted) {
                 // Hide and clean up quote immediately
                 const quoteEl = document.getElementById('quote');
-                quoteEl.classList.remove('glitch', 'glitchMedium', 'glitchIntense');
+                quoteEl.classList.remove('glitch', 'glitchMedium', 'glitchIntense', 'scrambling');
                 quoteEl.style.visibility = 'hidden';
                 quoteEl.style.opacity = '0';
                 document.getElementById('screenGlitch').classList.remove('active');
@@ -1084,9 +1226,9 @@
                 const quoteEl = document.getElementById('quote');
                 quoteEl.style.visibility = 'hidden';
                 quoteEl.style.opacity = '0';
-                quoteEl.classList.remove('glitch', 'glitchMedium', 'glitchIntense');
-                
-                document.getElementById('loomworks').classList.add('visible');
+                quoteEl.classList.remove('glitch', 'glitchMedium', 'glitchIntense', 'scrambling');
+
+                startLoomworksReveal();
                 loomworksShown = true;
             }
             
@@ -1515,7 +1657,11 @@
             blackHole.material.uniforms.pulseFactor.value = THREE.MathUtils.lerp(startPulseFactor, 0.6, eased);
             
             if (!quoteShown) {
+                quoteEl.textContent = initialQuote;
+                quoteEl.classList.remove('scrambling', 'glitch', 'glitchMedium', 'glitchIntense');
                 document.getElementById('quote').classList.add('visible');
+                quoteLookSwapped = false;
+                quoteDespairShown = false;
                 quoteShown = true;
             }
             
@@ -1572,6 +1718,11 @@
                 glitchStarted = true;
             }
             
+            if (collapseProgress > 0.45 && !quoteLookSwapped) {
+                glitchSwapText(quoteEl, lookQuote, { duration: 1200 });
+                quoteLookSwapped = true;
+            }
+            
         } else if (phase === 'glitch' || phase === 'blackout' || phase === 'loomworks' || phase === 'celli') {
             // Hide spheres during ending sequence, keep last position
             const centerY = 0;
@@ -1591,6 +1742,10 @@
             if (phase === 'glitch') {
                 const glitchProgress = (t - introCfg.collapseEnd) / (introCfg.glitchEnd - introCfg.collapseEnd);
                 sphereOpacity = THREE.MathUtils.lerp(1.0, 0, glitchProgress);
+                if (glitchProgress > 0.25 && !quoteDespairShown) {
+                    glitchSwapText(quoteEl, despairQuote, { duration: 950 });
+                    quoteDespairShown = true;
+                }
             } else {
                 sphereOpacity = 0;
             }
