@@ -25,6 +25,7 @@
     .quote.scrambling .quote__lookWrap::before { opacity:1; }
     .quote__lookWrap.quote__lookWrap--hidden { opacity:0; transform:translateY(0.45em); pointer-events:none; min-width:0; width:0; margin:0; }
     .quote__look { font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; text-transform:uppercase; }
+    .look-k-floater { position:fixed; left:0; top:0; transform:translate(-50%, -50%); pointer-events:none; font-family:'Roboto Mono', ui-monospace, monospace; font-size:16px; letter-spacing:0.12em; text-transform:uppercase; color:#e6e6e6; text-shadow:0 0 12px rgba(138,180,255,0.6); opacity:0; transition: transform 0.75s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.35s ease; z-index:15; }
     .quote.quote--loom { font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; }
     .quote.visible { animation: fadeInQuote 3s ease-out forwards; display:block !important; visibility:visible; }
     @keyframes fadeInQuote {
@@ -211,6 +212,7 @@
     import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
     import { AfterimagePass } from "three/examples/jsm/postprocessing/AfterimagePass.js";
     import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+    import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
     // --- Debug helpers ------------------------------------------------------
     const toastEl = document.getElementById('toast');
@@ -307,7 +309,10 @@
     const R = 0.16;
     const makeMat = (hex) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false });
     const CYAN = 0x00a8ff, MAGENTA = 0xff1e6e, YELLOW = 0xffb62e;
-    const colors = [new THREE.Color(CYAN), new THREE.Color(YELLOW), new THREE.Color(MAGENTA)];
+    const colors = [new THREE.Color(CYAN), new THREE.Color(YELLOW), new THREE.Color(MAGENTA)];
+    const pulseBaseColor = new THREE.Color(0xffd95a);
+    const pulseHighlightColor = new THREE.Color(0xfff4a0);
+    const pulseEdgeColor = new THREE.Color(0xfff7c4);
     
     // Create custom rounded shapes: square (cyan), triangle (yellow), circle (magenta)
     
@@ -387,9 +392,10 @@
     spheres.forEach((s,i)=>{ s.position.z = -i*0.002; scene.add(s); });
 
     // --- Voxel System for CELLI ---
-    const voxelSize = 0.08;
-    const voxelGeo = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
-    const voxelMat = new THREE.MeshBasicMaterial({ 
+    const voxelSize = 0.08;
+    const voxelGeo = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+    const roundedVoxelGeo = new RoundedBoxGeometry(voxelSize, voxelSize, voxelSize, 4, voxelSize * 0.35);
+    const voxelMat = new THREE.MeshBasicMaterial({
         color: 0x444444,  // Start as dim gray
         transparent: true, 
         opacity: 0,
@@ -475,7 +481,11 @@
                         gridY: rowIdx,     // Row index (0=top, 4=bottom)
                         gridCol: colIdx,   // Column index within letter (0-4)
                         glitched: false,    // Track if this voxel has been glitched out
-                        baseScale: celliScale  // Store scale for proper sizing
+                        baseScale: celliScale,  // Store scale for proper sizing
+                        originalMaterial: voxel.material,
+                        originalEdgesMaterial: edges.material,
+                        pulseMaterial: null,
+                        pulsePhaseOffset: Math.random() * Math.PI * 2
                     };
                     
                     // Scale voxel size to match the overall scale
@@ -554,6 +564,7 @@
     });
     const triMesh = new THREE.Mesh(triGeo, triMat);
     triMesh.position.z = -0.1; // Behind spheres
+    triMesh.material.opacity = 0;
     scene.add(triMesh);
 
     // --- Composer & passes --------------------------------------------------
@@ -619,6 +630,8 @@
     let blackoutStarted = false;
     let loomworksShown = false;
     let loomworksRevealStarted = false;
+    let lookKSlideStarted = false;
+    let lookKSlidePromise = null;
     let chimePlayed = false;
     let celliStarted = false;
     let doorwayShown = false;
@@ -626,11 +639,16 @@
     let inputAttempted = false;
     let celliGlitchStarted = false;
     let finalRollRotations = [0, 0, 0]; // Store final rotations from roll phase
-    let inputText = '=STAR';
+    const basePromptText = '=STAR';
+    let inputText = basePromptText;
     let tEntered = false;
     let burstAnimStarted = false;
     const starParticles = []; // Stars from burst voxels
     let loomworksTypingTimeout = null;
+    let backspaceEffectState = 'idle';
+    let backspaceEffectStart = 0;
+    let backspacePulseStart = 0;
+    let backspaceEffectVoxel = null;
     
     // Text particle system for click interactions
     const textParticles = [];
@@ -855,6 +873,112 @@
             }, 260);
         }, 1380);
     }
+
+    function animateLookKToLoom() {
+        if (lookKSlidePromise) {
+            return lookKSlidePromise;
+        }
+
+        lookKSlidePromise = new Promise((resolve) => {
+            const lookNode = quoteLook.firstChild;
+            const lookRect = quoteLook.getBoundingClientRect();
+            const loomRect = loomPost.getBoundingClientRect();
+
+            if ((!lookRect.width && !lookRect.height) || (!loomRect.width && !loomRect.height)) {
+                resolve();
+                return;
+            }
+
+            let kRect = lookRect;
+            if (lookNode && lookNode.textContent && lookNode.textContent.length) {
+                try {
+                    const range = document.createRange();
+                    const length = lookNode.textContent.length;
+                    range.setStart(lookNode, Math.max(0, length - 1));
+                    range.setEnd(lookNode, length);
+                    const rects = range.getClientRects();
+                    if (rects.length > 0) {
+                        kRect = rects[rects.length - 1];
+                    }
+                    range.detach();
+                } catch (err) {
+                    // Fallback to full rect
+                }
+            }
+
+            const startX = kRect.left + kRect.width / 2;
+            const startY = kRect.top + kRect.height / 2;
+            const endX = loomRect.left + loomRect.width / 2;
+            const endY = loomRect.top + loomRect.height / 2;
+
+            const floater = document.createElement('span');
+            floater.className = 'look-k-floater';
+            floater.textContent = 'K';
+            floater.style.left = `${startX}px`;
+            floater.style.top = `${startY}px`;
+            floater.style.transform = 'translate(-50%, -50%)';
+            document.body.appendChild(floater);
+
+            const originalLook = quoteLook.textContent;
+            if (originalLook && originalLook.length > 0) {
+                quoteLook.textContent = originalLook.slice(0, -1);
+            }
+
+            requestAnimationFrame(() => {
+                floater.style.opacity = '1';
+                floater.style.transform = `translate(-50%, -50%) translate(${endX - startX}px, ${endY - startY}px)`;
+            });
+
+            const finish = () => {
+                floater.style.opacity = '0';
+                setTimeout(() => {
+                    if (floater.parentNode) {
+                        floater.parentNode.removeChild(floater);
+                    }
+                    quoteLook.textContent = originalLook;
+                    resolve();
+                }, 220);
+            };
+
+            const fallback = setTimeout(finish, 900);
+
+            floater.addEventListener('transitionend', () => {
+                clearTimeout(fallback);
+                finish();
+            }, { once: true });
+        }).finally(() => {
+            lookKSlideStarted = true;
+        });
+
+        return lookKSlidePromise;
+    }
+
+    function triggerBackspaceEasterEgg() {
+        if (backspaceEffectState !== 'idle') return;
+        const activeVoxels = voxels.filter(v => v.visible && !v.userData.glitched);
+        if (!activeVoxels.length) return;
+        backspaceEffectVoxel = activeVoxels[Math.floor(Math.random() * activeVoxels.length)];
+        backspaceEffectStart = totalTime;
+        backspaceEffectState = 'flicker';
+    }
+
+    function refreshPromptDisplay() {
+        if (!promptTextEl || !promptCursorEl || !promptEl) return;
+        promptTextEl.textContent = inputText;
+        promptCursorEl.textContent = '_';
+        promptEl.setAttribute('data-text', inputText + '_');
+    }
+
+    function handlePromptBackspace() {
+        if (inputText.length <= basePromptText.length) return;
+        inputText = inputText.slice(0, -1);
+        tEntered = inputText.length > basePromptText.length;
+        refreshPromptDisplay();
+        if (hiddenInput) {
+            hiddenInput.value = '';
+        }
+        triggerBackspaceEasterEgg();
+    }
     
     function createTextParticle(x, y, text, color, sourceIndex) {
         const angle = Math.random() * Math.PI * 2;
@@ -1032,36 +1156,99 @@
             } else {
                 // Jiggle and flicker phase
                 const settleAge = celliTime - data.settleTime;
-                
+
                 // Jiggle (dampens over time)
                 const jiggleFactor = Math.max(0, 1 - settleAge * 0.5);
                 data.jigglePhase += dt * 20;
                 const jiggleX = Math.sin(data.jigglePhase) * 0.003 * jiggleFactor;
                 const jiggleY = Math.cos(data.jigglePhase * 1.3) * 0.002 * jiggleFactor;
-                voxel.position.x = data.targetX + jiggleX;
-                voxel.position.y = data.targetY + jiggleY;
-                
+                let posX = data.targetX + jiggleX;
+                let posY = data.targetY + jiggleY;
+
                 // Subtle scale bounce on landing for impact
                 const scaleBounce = settleAge < 0.3 ? 1.0 + (1.0 - settleAge / 0.3) * 0.15 : 1.0;
-                const finalScale = data.baseScale * scaleBounce;
+                let scaleMultiplier = scaleBounce;
+
+                if (backspaceEffectState !== 'pulse') {
+                    // Flicker (gets brighter over time) - start very dim
+                    data.flickerPhase += dt * 8;
+                    const brightProgress = Math.min(1, settleAge * 0.25);  // Slower brightening
+                    const flickerBase = THREE.MathUtils.lerp(0.1, 0.8, brightProgress);  // Start at 0.1, max 0.8
+                    const flickerWave = Math.sin(data.flickerPhase) * 0.15;
+                    voxel.material.opacity = flickerBase + flickerWave;
+
+                    // Gradually brighten the voxel color from dim gray to bright white
+                    const colorBrightness = THREE.MathUtils.lerp(0.2, 1.0, brightProgress);
+                    voxel.material.color.setRGB(colorBrightness, colorBrightness, colorBrightness);
+
+                    // Keep edges visible but subtle
+                    data.edges.material.opacity = THREE.MathUtils.lerp(0.4, 0.3, brightProgress);
+                }
+
+                if (backspaceEffectState === 'pulse') {
+                    const pulseAge = t - backspacePulseStart;
+                    const vibrateDecay = Math.max(0, 1 - pulseAge / 2.5);
+                    const offsetMag = 0.012 * vibrateDecay;
+                    posX += Math.sin(pulseAge * 16 + data.pulsePhaseOffset) * offsetMag;
+                    posY += Math.cos(pulseAge * 18 + data.pulsePhaseOffset) * offsetMag;
+                    const pulseLift = Math.min(1, pulseAge / 1.2);
+                    scaleMultiplier *= 1 + Math.sin(pulseAge * 5 + data.pulsePhaseOffset) * 0.15 * pulseLift;
+
+                    if (data.pulseMaterial) {
+                        const baseOpacity = 0.65 + Math.sin(pulseAge * 4 + data.pulsePhaseOffset) * 0.25 * vibrateDecay;
+                        data.pulseMaterial.opacity = THREE.MathUtils.clamp(baseOpacity, 0.35, 0.95);
+                        data.pulseMaterial.color.lerp(pulseHighlightColor, 0.08);
+                    }
+                }
+
+                voxel.position.x = posX;
+                voxel.position.y = posY;
+
+                const finalScale = data.baseScale * scaleMultiplier;
                 voxel.scale.set(finalScale, finalScale, finalScale);
-                
-                // Flicker (gets brighter over time) - start very dim
-                data.flickerPhase += dt * 8;
-                const brightProgress = Math.min(1, settleAge * 0.25);  // Slower brightening
-                const flickerBase = THREE.MathUtils.lerp(0.1, 0.8, brightProgress);  // Start at 0.1, max 0.8
-                const flickerWave = Math.sin(data.flickerPhase) * 0.15;
-                voxel.material.opacity = flickerBase + flickerWave;
-                
-                // Gradually brighten the voxel color from dim gray to bright white
-                const colorBrightness = THREE.MathUtils.lerp(0.2, 1.0, brightProgress);
-                const r = Math.floor(colorBrightness * 255);
-                voxel.material.color.setRGB(colorBrightness, colorBrightness, colorBrightness);
-                
-                // Keep edges visible but subtle
-                data.edges.material.opacity = THREE.MathUtils.lerp(0.4, 0.3, brightProgress);
+
+                if (backspaceEffectState === 'flicker' && voxel === backspaceEffectVoxel) {
+                    const flickerAge = t - backspaceEffectStart;
+                    const flickerOn = Math.sin(flickerAge * 30) > 0;
+                    voxel.material.opacity = flickerOn ? 1 : 0.2;
+                    voxel.material.color.copy(flickerOn ? pulseHighlightColor : pulseBaseColor);
+                }
             }
         });
+
+        if (backspaceEffectState === 'flicker' && backspaceEffectVoxel) {
+            const flickerAge = t - backspaceEffectStart;
+            const flickerDuration = 0.6;
+            if (flickerAge >= flickerDuration) {
+                backspaceEffectState = 'pulse';
+                backspacePulseStart = t;
+                voxels.forEach(voxel => {
+                    const data = voxel.userData;
+                    if (data.glitched) return;
+                    voxel.geometry = roundedVoxelGeo;
+                    if (data.pulseMaterial) {
+                        data.pulseMaterial.dispose();
+                    }
+                    if (voxel.material && voxel.material.dispose) {
+                        voxel.material.dispose();
+                    }
+                    const pulseMaterial = new THREE.MeshBasicMaterial({
+                        color: pulseBaseColor.clone(),
+                        transparent: true,
+                        opacity: 0.68,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false
+                    });
+                    voxel.material = pulseMaterial;
+                    data.pulseMaterial = pulseMaterial;
+                    if (data.edges && data.edges.material) {
+                        data.edges.material.color.copy(pulseEdgeColor);
+                        data.edges.material.opacity = 0.9;
+                    }
+                });
+                backspaceEffectVoxel = null;
+            }
+        }
     }
     
     // CELLI glitch and degradation
@@ -1250,462 +1437,111 @@
             
             // Hide triangle gradient - it makes things look off-center
             triMesh.visible = false;
-        } else if (phase === 'transition') {
-            const transProgress = (t - introCfg.triangleEnd) / (introCfg.transitionEnd - introCfg.triangleEnd);
-            bloomPass.strength = 0.7; // Continue from triangle
-            afterimagePass.uniforms.damp.value = THREE.MathUtils.lerp(0.92, 0.96, transProgress);
-            filmPass.uniforms.noise.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
-            filmPass.uniforms.scanAmp.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
-            triMesh.visible = false;
-        } else if (phase === 'normal') {
-            bloomPass.strength = 0.7; // Full glow
-            afterimagePass.uniforms.damp.value = 0.96; // Full trail
-            filmPass.uniforms.noise.value = 0.03; // Full grain
-            filmPass.uniforms.scanAmp.value = 0.03; // Full scanlines
-            triMesh.visible = true;
-            triMesh.material.opacity = 0.7;
-        } else if (phase === 'venn') {
-            // Settle into clear venn diagram
-            const vennProgress = (t - introCfg.normalEnd) / (introCfg.vennEnd - introCfg.normalEnd);
-            bloomPass.strength = THREE.MathUtils.lerp(0.7, 0.8, vennProgress);
-            afterimagePass.uniforms.damp.value = THREE.MathUtils.lerp(0.96, 0.7, vennProgress);
-            filmPass.uniforms.noise.value = THREE.MathUtils.lerp(0.03, 0.02, vennProgress);
-            filmPass.uniforms.scanAmp.value = THREE.MathUtils.lerp(0.03, 0.02, vennProgress);
-            triMesh.visible = true;
-            triMesh.material.opacity = THREE.MathUtils.lerp(0.7, 0.85, vennProgress);
-        } else if (phase === 'collapse') {
-            // Grow and collapse into white radiating circle
-            const collapseProgress = (t - introCfg.vennEnd) / (introCfg.collapseEnd - introCfg.vennEnd);
-            bloomPass.strength = THREE.MathUtils.lerp(0.8, 1.2, collapseProgress);
-            afterimagePass.uniforms.damp.value = THREE.MathUtils.lerp(0.7, 0.6, collapseProgress);
-            filmPass.uniforms.noise.value = THREE.MathUtils.lerp(0.02, 0.015, collapseProgress);
-            filmPass.uniforms.scanAmp.value = THREE.MathUtils.lerp(0.02, 0.015, collapseProgress);
-            triMesh.visible = true;
-            triMesh.material.opacity = THREE.MathUtils.lerp(0.85, 0.3, collapseProgress);
-            
-            // Progressive glitch starting mild - show quote only when glitching starts
-            if (collapseProgress > 0.15 && !glitchStarted) {
-                const quoteEl = document.getElementById('quote');
-                quoteEl.style.visibility = 'visible';
-                quoteEl.style.opacity = '0.85'; // Start visible
-                quoteEl.classList.add('glitch');
-                glitchStarted = true;
-                quoteShown = true;
+            triMesh.material.opacity = 0;
+        } else if (phase === 'transition') {
+            // Transform triangle into rotating circular orbit - organically
+            // ALSO morph all shapes into circles
+            const transProgress = (t - introCfg.triangleEnd) / (introCfg.transitionEnd - introCfg.triangleEnd);
+            const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+            const eased = easeInOut(transProgress);
+
+            // Morph shapes into circles halfway through transition
+            // Keep materials (colors) consistent - don't swap
+            if (transProgress > 0.5 && spheres[0].geometry !== circleGeoTarget && spheres[1].geometry !== circleGeoTarget) {
+                const mat0 = spheres[0].material;
+                const mat1 = spheres[1].material;
+
+                spheres[0].geometry.dispose();
+                spheres[0].geometry = createCircle(R);
+                spheres[0].material = mat0;  // Preserve cyan
+
+                spheres[1].geometry.dispose();
+                spheres[1].geometry = createCircle(R);
+                spheres[1].material = mat1;  // Preserve yellow
+
+                // spheres[2] is already a circle (magenta)
             }
 
-            if (collapseProgress > 0.45 && !quoteLookSwapped) {
-                glitchSwapQuote(quoteStates.look, { duration: 1200, onComplete: () => quoteEl.classList.remove('quote--loom') });
-                quoteLookSwapped = true;
-            }
+            const centerY = 0;
+            const triangleRadius = 0.42;
 
-            // Increase to medium glitch
-            if (collapseProgress > 0.6 && !mediumGlitchStarted) {
-                document.getElementById('quote').classList.remove('glitch');
-                document.getElementById('quote').classList.add('glitchMedium');
-                mediumGlitchStarted = true;
-            }
-        } else if (phase === 'glitch') {
-            // Intense glitch phase
-            const glitchProgress = (t - introCfg.collapseEnd) / (introCfg.glitchEnd - introCfg.collapseEnd);
-            bloomPass.strength = THREE.MathUtils.lerp(1.2, 0.5, glitchProgress);
-            afterimagePass.uniforms.damp.value = 0.3; // Heavy trails
-            filmPass.uniforms.noise.value = THREE.MathUtils.lerp(0.015, 0.5, glitchProgress);
-            filmPass.uniforms.scanAmp.value = THREE.MathUtils.lerp(0.015, 0.3, glitchProgress);
-            triMesh.visible = true;
-            triMesh.material.opacity = THREE.MathUtils.lerp(0.3, 0, glitchProgress);
-            
-            // Intensify text glitch at start of glitch phase
-            if (glitchProgress > 0.05 && !intenseGlitchStarted) {
-                document.getElementById('quote').classList.remove('glitch', 'glitchMedium');
-                document.getElementById('quote').classList.add('glitchIntense');
-                intenseGlitchStarted = true;
-            }
+            // Use same equilateral triangle angles
+            const triangleAngles = [
+                Math.PI / 2 + (2 * Math.PI / 3) * 0,
+                Math.PI / 2 + (2 * Math.PI / 3) * 1,
+                Math.PI / 2 + (2 * Math.PI / 3) * 2
+            ];
 
-            if (glitchProgress > 0.25 && !quoteDespairShown) {
-                glitchSwapQuote(quoteStates.despair, { duration: 950, onComplete: () => quoteEl.classList.add('quote--loom') });
-                quoteDespairShown = true;
-            }
-
-            // Screen glitch in middle
-            if (glitchProgress > 0.4 && !screenGlitchStarted) {
-                document.getElementById('screenGlitch').classList.add('active');
-                screenGlitchStarted = true;
-            }
-        } else if (phase === 'blackout') {
-            // Fade to black
-            const blackoutProgress = (t - introCfg.glitchEnd) / (introCfg.blackoutEnd - introCfg.glitchEnd);
-            bloomPass.strength = THREE.MathUtils.lerp(0.5, 0, blackoutProgress);
-            afterimagePass.uniforms.damp.value = 0.1;
-            filmPass.uniforms.noise.value = 0;
-            filmPass.uniforms.scanAmp.value = 0;
-            triMesh.visible = false;
-            
-            if (!blackoutStarted) {
-                // Hide and clean up quote immediately
-                const quoteEl = document.getElementById('quote');
-                quoteEl.classList.remove('glitch', 'glitchMedium', 'glitchIntense', 'scrambling');
-                quoteEl.style.visibility = 'hidden';
-                quoteEl.style.opacity = '0';
-                quoteEl.classList.remove('quote--loom');
-                document.getElementById('screenGlitch').classList.remove('active');
-                blackoutStarted = true;
-            }
-        } else if (phase === 'loomworks') {
-            // Show Loomworks text
-            bloomPass.strength = 0;
-            afterimagePass.uniforms.damp.value = 0;
-            filmPass.uniforms.noise.value = 0;
-            filmPass.uniforms.scanAmp.value = 0;
-            triMesh.visible = false;
-            
-            if (!loomworksShown) {
-                // Ensure quote is definitely hidden before showing loomworks
-                const quoteEl = document.getElementById('quote');
-                quoteEl.style.visibility = 'hidden';
-                quoteEl.style.opacity = '0';
-                quoteEl.classList.remove('glitch', 'glitchMedium', 'glitchIntense', 'scrambling');
-
-                startLoomworksReveal();
-                loomworksShown = true;
-            }
-            
-            // Play chime jingle at start of this phase
-            if (!chimePlayed) {
-                // Generate startup chime jingle
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = audioCtx.currentTime;
-                
-                // Melodic jingle: C - E - G - C (ascending arpeggio)
-                const melody = [
-                    { freq: 261.63, time: 0.0, duration: 0.25 },    // C4
-                    { freq: 329.63, time: 0.15, duration: 0.25 },   // E4
-                    { freq: 392.00, time: 0.30, duration: 0.25 },   // G4
-                    { freq: 523.25, time: 0.45, duration: 0.5 }     // C5 (held)
-                ];
-                
-                melody.forEach(note => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(note.freq, now + note.time);
-                    
-                    // Envelope
-                    gain.gain.setValueAtTime(0, now + note.time);
-                    gain.gain.linearRampToValueAtTime(0.12, now + note.time + 0.02);
-                    gain.gain.linearRampToValueAtTime(0.08, now + note.time + 0.1);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + note.time + note.duration);
-                    
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now + note.time);
-                    osc.stop(now + note.time + note.duration);
-                });
-                
-                chimePlayed = true;
-            }
-            
-            // Hide Loomworks text near end
-            const loomProgress = (t - introCfg.blackoutEnd) / (introCfg.loomworksEnd - introCfg.blackoutEnd);
-            if (loomProgress > 0.85) {
-                document.getElementById('loomworks').style.opacity = THREE.MathUtils.lerp(1, 0, (loomProgress - 0.85) / 0.15);
-            }
-        } else if (phase === 'celli') {
-            // CELLI phase - lower bloom to reduce wobble
-            bloomPass.strength = 0.35;
-            afterimagePass.uniforms.damp.value = 0.85;
-            filmPass.uniforms.noise.value = 0.008;
-            filmPass.uniforms.scanAmp.value = 0.003;
-            triMesh.visible = false;
-            
-            if (!celliStarted) {
-                document.getElementById('loomworks').style.display = 'none';
-                celliStarted = true;
-            }
-        } else {
-            // Doorway phase - portal opens from vertical bar (lower bloom)
-            const doorwayProgress = (t - introCfg.celliEnd) / (introCfg.doorwayEnd - introCfg.celliEnd);
-            
-            bloomPass.strength = THREE.MathUtils.lerp(0.35, 0.55, Math.min(doorwayProgress * 2, 1));
-            afterimagePass.uniforms.damp.value = 0.8;
-            filmPass.uniforms.noise.value = 0.005;
-            filmPass.uniforms.scanAmp.value = 0.002;
-            triMesh.visible = false;
-            
-            // Wait for all CELLI voxels to finish settling (last one settles around 3-4 seconds)
-            const celliAge = t - introCfg.loomworksEnd;
-            const allVoxelsSettled = celliAge > 5.0;
-            
-            if (!doorwayShown && allVoxelsSettled) {
-                // Show doorway bar after CELLI finishes
-                if (doorwayProgress > 0.05) {
-                    document.getElementById('doorway').classList.add('visible');
-                    doorwayShown = true;
-                }
-            }
-            
-            if (doorwayShown && !doorwayOpened) {
-                // Open doorway after short delay
-                if (doorwayProgress > 0.15) {
-                    document.getElementById('doorway').classList.add('open');
-                    doorwayOpened = true;
-                }
-            }
-        }
-
-        if (phase === 'roll') {
-            // Shapes roll in from off-screen to their positions
-            const rollProgress = t / introCfg.rollEnd;
-            const eased = rollProgress < 0.5 ? 
-                2 * rollProgress * rollProgress : 
-                1 - Math.pow(-2 * rollProgress + 2, 2) / 2;
-            
-            // Keep glow visible throughout roll
-            bloomPass.strength = 0.4;
-            
-            for (let i = 0; i < 3; i++) {
-                const targetX = (i - 1) * 0.35;
-                const startX = targetX - 2.0; // Start off-screen left
-                const x = THREE.MathUtils.lerp(startX, targetX, eased);
-                const y = -0.3;
-                
-                // Calculate rolling rotation based on distance traveled to reach FLAT position
-                const distance = x - startX; // Distance rolled
-                
-                // Calculate rotation for accurate rolling that ends flat
-                let rotation = 0;
-                if (i === 0) {
-                    // Square: needs to align flat (multiple of π/2)
-                    const squarePerimeter = R * 2 * 4;
-                    const naturalRotation = -(distance / squarePerimeter) * (Math.PI * 2);
-                    // Snap to nearest π/2 when nearly stopped
-                    rotation = rollProgress > 0.95 ? Math.round(naturalRotation / (Math.PI / 2)) * (Math.PI / 2) : naturalRotation;
-                } else if (i === 1) {
-                    // Triangle: needs to align flat (multiple of 2π/3)
-                    const trianglePerimeter = R * 2 * 3;
-                    const naturalRotation = -(distance / trianglePerimeter) * (Math.PI * 2);
-                    // Snap to nearest 2π/3 when nearly stopped (flat base)
-                    rotation = rollProgress > 0.95 ? Math.round(naturalRotation / (Math.PI * 2 / 3)) * (Math.PI * 2 / 3) : naturalRotation;
-                } else {
-                    // Circle: any rotation is "flat"
-                    rotation = -(distance / (2 * Math.PI * R)) * (Math.PI * 2);
-                }
-                
-                // Store final rotation when reaching target
-                if (rollProgress > 0.98) {
-                    finalRollRotations[i] = rotation;
-                }
-                
-                // Play continuous rolling thunks based on distance
-                const rollDist = Math.abs(x - startX);
-                const thunkInterval = 0.15; // Play thunk every 0.15 units rolled
-                const expectedThunks = Math.floor(rollDist / thunkInterval);
-                
-                if (expectedThunks > lastThunkTime[i]) {
-                    playRollingThunk(0.06);
-                    lastThunkTime[i] = expectedThunks;
-                }
-                
-                spheres[i].position.set(x, y, -i * 0.002);
-                spheres[i].rotation.z = rotation;
-                spheres[i].scale.set(introCfg.ballSize, introCfg.ballSize, introCfg.ballSize);
-                triMat.uniforms.points.value[i].set(x, y);
-                
-                // Play final landing thunk
-                if (!landingSounds[i] && Math.abs(x - targetX) < 0.02) {
-                    playRollingThunk(0.12);
-                    landingSounds[i] = true;
-                }
-            }
-            blackHole.visible = false; // Hide during roll-in
-            
-        } else if (phase === 'bounce') {
-            // Sequential bounces: left, then right, then middle
-            const bounceT = t - introCfg.rollEnd;
-            const baseY = -0.3;
-            
-            // Keep glow visible during bounce
-            bloomPass.strength = 0.4;
-            
-            for (let i = 0; i < 3; i++) {
-                const x = (i - 1) * 0.35;
-                let y = baseY;
-                
-                // Sequence: 0 (left), 2 (right), 1 (middle)
-                const bounceOrder = [0, 2, 1];
-                const bounceIndex = bounceOrder.indexOf(i);
-                const bounceStart = bounceIndex * introCfg.bounceDuration;
-                const bounceEnd = bounceStart + introCfg.bounceDuration;
-                
-                if (bounceT >= bounceStart && bounceT <= bounceEnd) {
-                    const localT = (bounceT - bounceStart) / introCfg.bounceDuration;
-                    const bounce = Math.sin(localT * Math.PI) * introCfg.bounceHeight;
-                    y = baseY + bounce;
-                    
-                    // Play thud sounds for jump and land
-                    if (!window['bounceJump_' + i] && localT < 0.05) {
-                        playBounceThud(0.12);
-                        window['bounceJump_' + i] = true;
-                    }
-                    if (!window['bounceLand_' + i] && localT > 0.95) {
-                        playBounceThud(0.15);
-                        window['bounceLand_' + i] = true;
-                    }
-                }
-                
-                spheres[i].position.set(x, y, -i * 0.002);
-                spheres[i].rotation.z = finalRollRotations[i]; // Use exact rotation from roll phase
-                spheres[i].scale.set(introCfg.ballSize, introCfg.ballSize, introCfg.ballSize);
-                triMat.uniforms.points.value[i].set(x, y);
-            }
-            blackHole.visible = false; // Hide during bounce
-            
-        } else if (phase === 'triangle') {
-            // Triangle phase: form → converge → grow & brighten
-            const triangleProgress = (t - introCfg.bounceEnd) / (introCfg.triangleEnd - introCfg.bounceEnd);
-            
-            // Smooth cubic easing for entire phase
-            const smoothEase = (p) => p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-            
-            // Sub-phases with smooth transitions
-            const formProgress = Math.min(triangleProgress / 0.35, 1.0);
-            const formEased = smoothEase(formProgress);
-            
-            const convergeStart = 0.35;
-            const convergeProgress = triangleProgress > convergeStart ? Math.min((triangleProgress - convergeStart) / 0.25, 1.0) : 0;
-            const convergeEased = smoothEase(convergeProgress);
-            
-            const growStart = 0.6;
-            const growProgress = triangleProgress > growStart ? (triangleProgress - growStart) / 0.4 : 0;
-            const growEased = smoothEase(growProgress);
-            
-            // Create EQUILATERAL triangle centered at origin
-            const centerY = 0;
-            const triangleRadius = 0.42; // Distance from center to each vertex (increased)
-            
-            // Equilateral triangle: vertices at 120° intervals, pointing up
-            const triangleAngles = [
-                Math.PI / 2 + (2 * Math.PI / 3) * 0,  // Top (90°)
-                Math.PI / 2 + (2 * Math.PI / 3) * 1,  // Bottom-left (210°)
-                Math.PI / 2 + (2 * Math.PI / 3) * 2   // Bottom-right (330°)
-            ];
-            
-            // Rotation grows smoothly throughout
-            const rotationAmount = growEased * 0.2;
-            
-            // Pulsing: breathe in/out during grow phase
-            const pulseSpeed = 2.0;
-            const pulsePhase = (t - introCfg.bounceEnd - growStart * (introCfg.triangleEnd - introCfg.bounceEnd)) * pulseSpeed;
-            const pulseFactor = growProgress > 0 ? 1 + Math.sin(pulsePhase) * 0.08 : 1;
-            
-            // Converge factor - pull toward center during converge phase
-            const convergeFactor = convergeEased * 0.12;
-            
-            // Map spheres to triangle positions: [0]=left→bottom-left, [1]=middle→top, [2]=right→bottom-right
-            const triangleMapping = [1, 0, 2]; // sphere i goes to angle triangleMapping[i]
-            
-            for (let i = 0; i < 3; i++) {
-                // Starting positions from the line (after bounce)
-                const startX = (i - 1) * 0.35;
-                const startY = -0.3;
-                
-                // Target positions in triangle formation (with correct mapping)
-                const angleIndex = triangleMapping[i];
-                const angle = triangleAngles[angleIndex] + rotationAmount;
-                const targetRadius = triangleRadius * (1 - convergeFactor) * pulseFactor;
-                const targetX = Math.cos(angle) * targetRadius;
-                const targetY = Math.sin(angle) * targetRadius + centerY;
-                
-                // Interpolate from line to triangle formation
-                const x = THREE.MathUtils.lerp(startX, targetX, formEased);
-                const y = THREE.MathUtils.lerp(startY, targetY, formEased);
-                
-                spheres[i].position.set(x, y, -i * 0.002);
-                spheres[i].rotation.z = 0; // Reset rotation for orbit phases
-                
-                // Scale: small → stays small during form/converge → grows large with overshoot
-                let scale = introCfg.ballSize;
-                if (formEased < 1) {
-                    scale = THREE.MathUtils.lerp(introCfg.ballSize, introCfg.ballSize * 1.0, formEased);
-                } else {
-                    // Add subtle overshoot for organic feel
-                    const overshoot = Math.sin(growEased * Math.PI) * 0.08;
-                    scale = THREE.MathUtils.lerp(introCfg.ballSize * 1.0, introCfg.ballSize * 2.2, growEased) + overshoot;
-                }
-                
-                spheres[i].scale.set(scale, scale, scale);
-                triMat.uniforms.points.value[i].set(x, y);
-            }
-            
-            blackHole.visible = true;
-            blackHole.material.uniforms.pulseFactor.value = formEased * 0.4;
-            
-        } else if (phase === 'transition') {
-            // Transform triangle into rotating circular orbit - organically
-            // ALSO morph all shapes into circles
-            const transProgress = (t - introCfg.triangleEnd) / (introCfg.transitionEnd - introCfg.triangleEnd);
-            // Smooth cubic easing
-            const eased = transProgress < 0.5 ? 
-                4 * transProgress * transProgress * transProgress : 
-                1 - Math.pow(-2 * transProgress + 2, 3) / 2;
-            
-            // Morph shapes into circles halfway through transition
-            // Keep materials (colors) consistent - don't swap
-            if (transProgress > 0.5 && spheres[0].geometry !== circleGeoTarget && spheres[1].geometry !== circleGeoTarget) {
-                const mat0 = spheres[0].material;
-                const mat1 = spheres[1].material;
-                
-                spheres[0].geometry.dispose();
-                spheres[0].geometry = createCircle(R);
-                spheres[0].material = mat0;  // Preserve cyan
-                
-                spheres[1].geometry.dispose();
-                spheres[1].geometry = createCircle(R);
-                spheres[1].material = mat1;  // Preserve yellow
-                
-                // spheres[2] is already a circle (magenta)
-            }
-            
-            const centerY = 0;
-            const triangleRadius = 0.42;
-            
-            // Use same equilateral triangle angles
-            const triangleAngles = [
-                Math.PI / 2 + (2 * Math.PI / 3) * 0,
-                Math.PI / 2 + (2 * Math.PI / 3) * 1,
-                Math.PI / 2 + (2 * Math.PI / 3) * 2
-            ];
-            
             // Starting radius (with 12% convergence from triangle phase)
             const startRadius = triangleRadius * (1 - 0.12);
-            
+
             // Calculate rotation to match end of triangle phase (which uses rotationAmount = 0.2)
             // The triangle phase maps spheres with triangleMapping, so we need to continue from there
             const triangleEndRotation = 0.2; // matches growEased = 1.0 * 0.2
             const rotation = triangleEndRotation + (eased * Math.PI * 2);
-            
-            // Expand from triangle size to full orbit size
+
             const targetDist = motionCfg.maxDist * 0.5;
-            const currentDist = THREE.MathUtils.lerp(startRadius, targetDist, eased);
-            
+            const convergeEnd = 0.55;
+            const holdEnd = Math.min(0.95, convergeEnd + 0.1);
+            const minDist = triangleRadius * 0.12;
+            let currentDist = startRadius;
+
+            if (transProgress < convergeEnd) {
+                const convergeProgress = easeInOut(Math.min(transProgress / convergeEnd, 1));
+                currentDist = THREE.MathUtils.lerp(startRadius, minDist, convergeProgress);
+            } else if (transProgress < holdEnd) {
+                currentDist = minDist;
+            } else {
+                const repelProgress = easeInOut(Math.min((transProgress - holdEnd) / (1 - holdEnd), 1));
+                currentDist = THREE.MathUtils.lerp(minDist, targetDist, repelProgress);
+            }
+
             // Use same mapping as triangle phase
             const triangleMapping = [1, 0, 2];
-            
+
             for (let i = 0; i < 3; i++) {
                 const angleIndex = triangleMapping[i];
                 const angle = triangleAngles[angleIndex] + rotation;
-                const x = Math.cos(angle) * currentDist;
-                const y = Math.sin(angle) * currentDist + centerY;
-                
-                spheres[i].position.set(x, y, -i * 0.002);
-                spheres[i].rotation.z = 0;
-                const scale = THREE.MathUtils.lerp(introCfg.ballSize * 2.2, 1.0, eased);
-                spheres[i].scale.set(scale, scale, scale);
-                triMat.uniforms.points.value[i].set(x, y);
-            }
-            blackHole.visible = true;
-            blackHole.material.uniforms.pulseFactor.value = THREE.MathUtils.lerp(0.4, 0.5, eased);
-            
+                const x = Math.cos(angle) * currentDist;
+                const y = Math.sin(angle) * currentDist + centerY;
+
+                spheres[i].position.set(x, y, -i * 0.002);
+                spheres[i].rotation.z = 0;
+                const scale = THREE.MathUtils.lerp(introCfg.ballSize * 2.2, 1.0, eased);
+                spheres[i].scale.set(scale, scale, scale);
+                triMat.uniforms.points.value[i].set(x, y);
+            }
+
+            let bloomStrength;
+            if (transProgress < convergeEnd) {
+                const convergeProgress = Math.min(transProgress / convergeEnd, 1);
+                bloomStrength = THREE.MathUtils.lerp(0.25, 0.75, easeInOut(convergeProgress));
+            } else if (transProgress < holdEnd) {
+                bloomStrength = 0.75;
+            } else {
+                const repelProgress = Math.min((transProgress - holdEnd) / (1 - holdEnd), 1);
+                bloomStrength = THREE.MathUtils.lerp(0.75, 0.85, easeInOut(repelProgress));
+            }
+            bloomPass.strength = bloomStrength;
+
+            const filmEase = easeInOut(Math.min(transProgress / Math.max(holdEnd, 0.0001), 1));
+            afterimagePass.uniforms.damp.value = THREE.MathUtils.lerp(0.92, 0.96, filmEase);
+            filmPass.uniforms.noise.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
+            filmPass.uniforms.scanAmp.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
+
+            if (transProgress < holdEnd) {
+                triMesh.visible = false;
+                triMesh.material.opacity = 0;
+            } else {
+                const repelProgress = Math.min((transProgress - holdEnd) / (1 - holdEnd), 1);
+                triMesh.visible = true;
+                triMesh.material.opacity = THREE.MathUtils.lerp(0, 0.7, easeInOut(repelProgress));
+            }
+
+            blackHole.visible = true;
+            const pulseMix = transProgress < convergeEnd ? 0.4 : 0.5;
+            blackHole.material.uniforms.pulseFactor.value = THREE.MathUtils.lerp(0.4, pulseMix, eased);
+
         } else if (phase === 'normal') {
             // Normal pulsing/converging animation
             const normalT = t - introCfg.transitionEnd;
@@ -2423,15 +2259,18 @@
     const promptContainer = document.querySelector('.prompt-container');
     const promptTextEl = document.getElementById('promptText');
     const promptCursorEl = document.getElementById('promptCursor');
+    const promptEl = document.querySelector('.prompt');
     const hiddenInput = document.getElementById('hiddenInput');
     
     // Click to trigger CELLI glitch (reveal T) and focus hidden input for mobile
     if (promptContainer) {
         promptContainer.addEventListener('click', () => {
-            if (!running || inputAttempted) return;
-            triggerCelliGlitch();
-            inputAttempted = true;
-            
+            if (!running || !doorwayOpened) return;
+            if (!inputAttempted) {
+                triggerCelliGlitch();
+                inputAttempted = true;
+            }
+
             // Focus hidden input for mobile keyboard
             if (hiddenInput) {
                 hiddenInput.value = '';
@@ -2441,19 +2280,24 @@
         
         // Keyboard input to trigger final sequence (desktop)
         window.addEventListener('keydown', (e) => {
-            if (!running || !doorwayOpened || !inputAttempted || tEntered) return;
-            
+            if (!running || !doorwayOpened || !inputAttempted) return;
+
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                handlePromptBackspace();
+                return;
+            }
+
+            if (tEntered) return;
+
             // Only accept 'T' or 't' after clicking
             if (e.key.toLowerCase() === 't') {
                 e.preventDefault();
                 tEntered = true;
                 inputText += 'T';
-                
-                // Update display
-                promptTextEl.textContent = inputText;
-                promptCursorEl.textContent = '_';
-                document.querySelector('.prompt').setAttribute('data-text', inputText + '_');
-                
+
+                refreshPromptDisplay();
+
                 // Trigger burst animation
                 setTimeout(() => {
                     triggerBurstToStars();
@@ -2463,6 +2307,14 @@
         
         // Mobile input handler
         if (hiddenInput) {
+            hiddenInput.addEventListener('keydown', (e) => {
+                if (!running || !doorwayOpened || !inputAttempted) return;
+                if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    handlePromptBackspace();
+                }
+            });
+
             hiddenInput.addEventListener('input', (e) => {
                 if (!running || !doorwayOpened || !inputAttempted || tEntered) return;
 
@@ -2472,10 +2324,7 @@
                     tEntered = true;
                     inputText += 'T';
 
-                    // Update display
-                    promptTextEl.textContent = inputText;
-                    promptCursorEl.textContent = '_';
-                    document.querySelector('.prompt').setAttribute('data-text', inputText + '_');
+                    refreshPromptDisplay();
 
                     // Blur input
                     hiddenInput.blur();
@@ -2509,7 +2358,6 @@
         afterimagePass.uniforms.damp.value = 0.88;
         
         // Hide prompt but keep it for reference
-        const promptEl = document.querySelector('.prompt');
         if (promptEl) {
             promptEl.style.transition = 'opacity 0.5s ease';
             promptEl.style.opacity = '0';
