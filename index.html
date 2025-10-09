@@ -10,27 +10,12 @@
   <style>
     :root { --bg: #000; --fg: #e6e6e6; --accent:#8ab4ff; }
     html, body { margin:0; height:100%; background:#000; overflow:hidden; }
-    #app { position:fixed; inset:0; background:var(--bg); }
-    .hud { position:fixed; inset:0; pointer-events:none; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    #app { position:fixed; inset:0; background:var(--bg); z-index:60; }
+    .hud { position:fixed; inset:0; pointer-events:none; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; z-index:65; }
     .brand { position:absolute; left:2rem; bottom:2rem; color:var(--fg); letter-spacing:0.08em; font-weight:600; font-size:12px; opacity:.65; text-transform:uppercase; }
-    .quote { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:var(--fg); font-weight:300; font-size:16px; letter-spacing:0.03em; line-height:1.6; max-width:560px; width:90%; text-align:center; font-style:italic; margin:0; padding:0 20px; box-sizing:border-box; z-index:10; visibility:hidden; opacity:0; transition: color 0.45s ease, text-shadow 0.45s ease; display:flex; align-items:baseline; justify-content:center; gap:0.45em; flex-wrap:nowrap; }
-    .quote__text { display:block; max-width:100%; flex:1 1 auto; min-width:0; }
-    .quote__text--before { text-align:right; }
-    .quote__text--after { text-align:left; }
-    .quote__lookWrap { position:relative; display:inline-flex; align-items:center; justify-content:center; min-width:3.5ch; transition:opacity 0.4s ease, transform 0.4s ease; flex:0 0 auto; }
-    .quote.quote--no-look { flex-wrap:wrap; }
-    .quote.quote--no-look .quote__text--before { flex:0 0 auto; text-align:center; }
-    .quote.quote--no-look .quote__text--after { display:none; }
-    .quote__lookWrap::before { content:""; position:absolute; inset:-0.15em -0.35em; border-radius:4px; background:rgba(138,180,255,0.08); opacity:0; transition:opacity 0.3s ease; }
-    .quote.scrambling .quote__lookWrap::before { opacity:1; }
-    .quote__lookWrap.quote__lookWrap--hidden { opacity:0; transform:translateY(0.45em); pointer-events:none; min-width:0; width:0; margin:0; flex-basis:0; }
-    .quote__look { font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; text-transform:uppercase; display:inline-flex; align-items:baseline; }
-    .quote__lookLast { display:inline-block; transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.2s ease; will-change: transform; }
-    .quote__lookLast.quote__lookLast--slide { transform: translateX(0.35ch); }
+    .quote { position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); color:var(--fg); font-weight:300; font-size:16px; letter-spacing:0.03em; line-height:1.6; max-width:560px; width:90%; text-align:center; font-style:italic; margin:0; padding:0 20px; box-sizing:border-box; z-index:10; visibility:hidden; opacity:0; transition: color 0.45s ease, text-shadow 0.45s ease; }
+    .quote__text { display:block; max-width:100%; }
     .quote.quote--loom { font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; }
-    .floatingK { position:fixed; left:0; top:0; display:none; pointer-events:none; font-family:'Roboto Mono', ui-monospace, monospace; font-style:normal; letter-spacing:0.12em; text-transform:uppercase; font-weight:300; font-size:16px; color:var(--fg); opacity:0; transform:translate(-50%, -50%) translate(var(--floating-k-tx, 0), var(--floating-k-ty, 0)); transition: transform 1.05s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.45s ease; z-index:12; }
-    .floatingK.visible { opacity:1; }
-    .floatingK.floatingK--active { will-change: transform, opacity; }
     .quote.visible { animation: fadeInQuote 3s ease-out forwards; display:block !important; visibility:visible; }
     @keyframes fadeInQuote {
       0% { opacity:0; transform:translate(-50%, -50%) translateY(20px); }
@@ -76,7 +61,7 @@
     }
     
     /* Doorway portal - starts as vertical bar */
-    .doorway { position:fixed; left:50%; bottom:20%; transform:translate(-50%, 0); width:4px; height:60px; background:#fff; pointer-events:none; z-index:20; opacity:0; box-shadow: 0 0 15px 5px rgba(255,255,255,0.8), 0 0 30px 10px rgba(255,255,255,0.5); transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1), height 1.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 1.5s ease-out, opacity 0.5s ease-out; overflow:hidden; }
+    .doorway { position:fixed; left:50%; bottom:20%; transform:translate(-50%, 0); width:4px; height:60px; background:#fff; pointer-events:none; z-index:68; opacity:0; box-shadow: 0 0 15px 5px rgba(255,255,255,0.8), 0 0 30px 10px rgba(255,255,255,0.5); transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1), height 1.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 1.5s ease-out, opacity 0.5s ease-out; overflow:hidden; }
     .doorway.visible { opacity:1; }
     .doorway.open { width:min(280px, 85vw); height:80px; box-shadow: 0 0 40px 20px rgba(255,255,255,0.7), 0 0 80px 35px rgba(255,255,255,0.4), inset 0 0 60px rgba(255,255,255,0.6); }
     
@@ -152,10 +137,18 @@
     canvas { filter: saturate(1.06) contrast(1.06) brightness(1.02); display:block; }
 
     /* Play overlay */
-    .play { position:fixed; inset:0; display:grid; place-items:center; background: radial-gradient(ellipse at center, rgba(30,30,30,.6) 0%, rgba(0,0,0,.9) 60%); z-index:10; }
+    .play { position:fixed; inset:0; display:grid; place-items:center; background: radial-gradient(ellipse at center, rgba(30,30,30,.6) 0%, rgba(0,0,0,.9) 60%); z-index:100; }
     .play.hidden{ display:none; }
     .play button{ pointer-events:auto; appearance:none; border:none; padding:14px 20px; border-radius:999px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; background:#111; color:#e8eaed; box-shadow: 0 0 0 2px rgba(255,255,255,.08) inset, 0 6px 20px rgba(0,0,0,.45); cursor:pointer; display:flex; gap:12px; align-items:center; }
     .play button::before{ content:"▶"; font-size:14px; opacity:.9; }
+    
+    /* Skip button */
+    .skip-btn { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); pointer-events:auto; cursor:pointer; z-index:70; opacity:0.7; transition: all 1s ease; display: flex; align-items: center; justify-content: center; }
+    .skip-btn:hover { opacity:1; }
+    .skip-btn.hidden { display:none; }
+    .skip-triangle { width: 0; height: 0; border-left: 12px solid #fff; border-top: 8px solid transparent; border-bottom: 8px solid transparent; display: inline-block; margin: 0 2px; filter: drop-shadow(0 2px 6px rgba(255,255,255,0.6)); transition: all 1s ease; }
+    .skip-btn.bow-mode { position: fixed !important; top: 12% !important; bottom: auto !important; left: 35% !important; transform: translateX(-50%); pointer-events: none; opacity: 1; }
+    .skip-btn.bow-mode .skip-triangle { position: absolute; filter: drop-shadow(0 2px 8px rgba(255,255,255,0.8)) drop-shadow(0 0 12px rgba(255,255,255,0.4)); }
 
     /* Debug toast */
     .toast{ position:fixed; right:14px; top:14px; background:rgba(18,18,18,.9); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px 12px; font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; z-index: 9; box-shadow: 0 10px 24px rgba(0,0,0,.35); pointer-events:none; opacity:.95; max-width: 42ch; }
@@ -168,10 +161,9 @@
 <body>
   <div id="app" class="scanlines"></div>
   <div class="hud">
-    <div id="quote" class="quote quote--no-look">
-      <span id="quoteBefore" class="quote__text quote__text--before">...if you GAZE for long into an abyss, the abyss GAZES also into you.</span>
-      <span id="quoteLookWrap" class="quote__lookWrap quote__lookWrap--hidden"><span id="quoteLook" class="quote__look"><span id="quoteLookMain">LOO</span><span id="quoteLookLast" class="quote__lookLast">K</span></span></span>
-      <span id="quoteAfter" class="quote__text quote__text--after"></span>
+    <div id="quote" class="quote">
+      <span id="quoteBefore" class="quote__text">...if you gaze for long into an abyss, the abyss gazes also into you.</span>
+      <span id="quoteAfter" class="quote__text" style="display:none;"></span>
     </div>
     <div id="loomworks" class="loomworks" aria-live="polite">
       <span id="loomPre" class="loomworks-chunk">L</span><span id="loomCore" class="loomworks-chunk">OO</span><span id="loomPost" class="loomworks-chunk">K</span><span id="loomTail" class="loomworks-chunk"></span>
@@ -197,6 +189,10 @@
   <div id="fallback" class="fallback" style="display:none">⚠️ WebGL unavailable or ES Modules not supported. Try a newer browser/GPU.</div>
 
   <div id="play" class="play"><button id="playBtn">Play</button></div>
+    <div id="skipBtn" class="skip-btn hidden">
+        <div class="skip-triangle" id="skipTriangle1"></div>
+        <div class="skip-triangle" id="skipTriangle2"></div>
+    </div>
   <div id="toast" class="toast" style="display:none"></div>
 
   <!-- Import map so bare specifiers resolve to CDN modules -->
@@ -237,66 +233,29 @@
     const quoteEl = document.getElementById('quote');
     const quoteBefore = document.getElementById('quoteBefore');
     const quoteAfter = document.getElementById('quoteAfter');
-    const quoteLook = document.getElementById('quoteLook');
-    const quoteLookMain = document.getElementById('quoteLookMain');
-    const quoteLookLast = document.getElementById('quoteLookLast');
-    const quoteLookWrap = document.getElementById('quoteLookWrap');
     const loomworksEl = document.getElementById('loomworks');
     const loomPre = document.getElementById('loomPre');
     const loomCore = document.getElementById('loomCore');
     const loomPost = document.getElementById('loomPost');
     const loomTail = document.getElementById('loomTail');
-    const floatingKEl = document.getElementById('floatingK');
     const quoteStates = {
         initial: {
-            before: '...if you GAZE for long into an abyss, the abyss GAZES also into you.',
-            after: '',
-            look: 'LOOK',
+            text: '...if you gaze for long into an abyss, the abyss gazes also into you.',
             showLook: false
         },
         look: {
-            before: '...if you ',
-            after: ' for long into an abyss, the abyss LOOKS also into you.',
-            look: 'LOOK',
-            showLook: true
+            text: '...if you LOOK for long into an abyss, the abyss LOOKS also into you.',
+            showLook: false
         },
         despair: {
-            before: '',
-            after: ' on my works, ye Mighty, and despair!',
-            look: 'LOOK',
-            showLook: true
+            text: 'LOOK on my works, ye Mighty, and despair!',
+            showLook: false
         }
     };
-    let lookAnchorPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    let lookKPosition = null;
-    let lookKSlideStarted = false;
-
-    function getQuoteLookText(){
-        if (!quoteLookMain || !quoteLookLast) return quoteLook ? quoteLook.textContent || '' : '';
-        return `${quoteLookMain.textContent || ''}${quoteLookLast.textContent || ''}`;
-    }
-
-    function setQuoteLookText(text){
-        if (!quoteLookMain || !quoteLookLast) {
-            if (quoteLook) quoteLook.textContent = text || '';
-            return;
-        }
-        const safe = text || '';
-        if (safe.length <= 1) {
-            quoteLookMain.textContent = '';
-            quoteLookLast.textContent = safe;
-        } else {
-            quoteLookMain.textContent = safe.slice(0, -1);
-            quoteLookLast.textContent = safe.slice(-1);
-        }
-        if (quoteLookWrap && !quoteLookWrap.classList.contains('quote__lookWrap--hidden')) {
-            requestAnimationFrame(captureLookAnchorPosition);
-        }
-    }
 
     applyQuoteState(quoteStates.initial, { immediate: true });
     quoteEl.classList.remove('quote--loom');
-    loomTail.textContent = '';
+    loomTail.innerHTML = '';
     const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -462,6 +421,7 @@
     };
     
     const voxels = [];
+    const letterVoxels = { C: [], E: [], L1: [], L2: [], I: [] }; // Track voxels by letter
     const letters = ['C', 'E', 'L', 'L', 'I'];
     let letterSpacing = 0.6;
     let celliScale = 1.0;
@@ -536,6 +496,10 @@
                     voxel.visible = false;
                     scene.add(voxel);
                     voxels.push(voxel);
+                    
+                    // Track voxels by letter for restoration
+                    const letterKey = letterIdx === 0 ? 'C' : letterIdx === 1 ? 'E' : letterIdx === 2 ? 'L1' : letterIdx === 3 ? 'L2' : 'I';
+                    letterVoxels[letterKey].push(voxel);
                 }
             });
         });
@@ -638,14 +602,14 @@
         bounceEnd: 4.5,      // Sequential bounces
         triangleEnd: 7.5,    // Form triangle + grow + converge
         transitionEnd: 9.5,  // Transition to orbit
-        normalEnd: 21.5,     // Normal animation duration (about 3 loops)
-        vennEnd: 24.0,       // Clear venn diagram
-        collapseEnd: 28.0,   // Collapse to white circle (extended)
-        glitchEnd: 30.5,     // Intense glitch + fade (extended)
-        blackoutEnd: 32.0,   // Complete blackout
-        loomworksEnd: 36.0,  // Show Loomworks text
-        celliEnd: 42.0,      // CELLI voxel animation
-        doorwayEnd: 50.0,    // Doorway portal sequence
+        normalEnd: 15.5,     // Converge + one pulse cycle
+        vennEnd: 18.0,       // Clear venn diagram
+        collapseEnd: 22.0,   // Collapse to white circle (extended)
+        glitchEnd: 24.5,     // Intense glitch + fade (extended)
+        blackoutEnd: 26.0,   // Complete blackout
+        loomworksEnd: 30.0,  // Show Loomworks text
+        celliEnd: 36.0,      // CELLI voxel animation
+        doorwayEnd: 44.0,    // Doorway portal sequence
         ballSize: 0.12,      // Size during intro
         bounceHeight: 0.35,  // Bounce amplitude
         bounceDuration: 0.6  // Each bounce duration
@@ -661,7 +625,6 @@
     let lastThunkTime = [0, 0, 0]; // Track last thunk time for each shape
     
     let quoteShown = false;
-    let quoteLookSwapped = false;
     let quoteDespairShown = false;
     let glitchStarted = false;
     let mediumGlitchStarted = false;
@@ -672,13 +635,14 @@
     let loomworksRevealStarted = false;
     let chimePlayed = false;
     let celliStarted = false;
+    let celliStartTime = 0;
     let doorwayShown = false;
     let doorwayOpened = false;
     let inputAttempted = false;
     let celliGlitchStarted = false;
     let finalRollRotations = [0, 0, 0]; // Store final rotations from roll phase
-    const promptBaseText = '=STAR';
-    let inputText = promptBaseText;
+    const promptBaseText = '=';
+    let inputText = '=STAR';
     let tEntered = false;
     let burstAnimStarted = false;
     let burstTimeout = null;
@@ -687,6 +651,20 @@
     let celliBackspaceFlickerTriggered = false;
     const starParticles = []; // Stars from burst voxels
     let loomworksTypingTimeout = null;
+    const glitchedVoxelsStack = []; // Track glitched voxels in order for restoration
+    let lettersToRestore = ['C', 'E', 'L1', 'L2']; // Order of restoration on backspace
+    let restoredLetters = 0;
+    let endSequence = ''; // Track E, N, D input sequence
+    let allYellowTransformed = false; // Track if all are yellow and transformed
+    let endColorState = 'yellow'; // Track current color state: yellow, magenta, cyan, green
+    let endColorPrevState = 'yellow'; // Track previous color for transitions
+    let endColorTransitionStart = 0; // When color transition started
+    let snapTogetherStarted = false;
+    let snapTogetherTime = 0;
+    let visiCalcShown = false;
+    let celliMoveToCornerStarted = false;
+    let celliMoveToCornerTime = 0;
+    let visiCalcGreenTransitionStarted = false; // Track when VisiCalc green transition begins
     
     // Text particle system for click interactions
     const textParticles = [];
@@ -709,35 +687,6 @@
 
     const glitchGlyphs = "!<>-_\\/[]{}—=+*^?#▒▓█▞▚";
 
-    function captureLookAnchorPosition() {
-        if (!quoteLookWrap) return;
-        const rect = quoteLookWrap.getBoundingClientRect();
-        if (!rect.width && !rect.height) return;
-        lookAnchorPosition = {
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2
-        };
-        if (quoteLookLast) {
-            const lastRect = quoteLookLast.getBoundingClientRect();
-            if (lastRect && (lastRect.width || lastRect.height)) {
-                lookKPosition = {
-                    x: lastRect.left + lastRect.width / 2,
-                    y: lastRect.top + lastRect.height / 2,
-                    width: lastRect.width,
-                    height: lastRect.height
-                };
-            }
-        }
-        updateLoomworksOffset();
-    }
-
-    function updateLoomworksOffset() {
-        const offsetX = lookAnchorPosition.x - window.innerWidth / 2;
-        const offsetY = lookAnchorPosition.y - window.innerHeight / 2;
-        loomworksEl.style.setProperty('--loomOffsetX', `${offsetX}px`);
-        loomworksEl.style.setProperty('--loomOffsetY', `${offsetY}px`);
-    }
-
     function glitchSwapQuote(targetState, { duration = 1100, onComplete = null } = {}) {
         if (!targetState) return;
         if (quoteEl.dataset.swapping === '1') return;
@@ -745,65 +694,33 @@
         quoteEl.dataset.swapping = '1';
         quoteEl.classList.add('scrambling');
 
-        const initialBefore = quoteBefore.textContent || '';
-        const initialAfter = quoteAfter.textContent || '';
-        const targetBefore = targetState.before || '';
-        const targetAfter = targetState.after || '';
-        const targetLook = targetState.look || getQuoteLookText() || '';
-        const beforeMax = Math.max(initialBefore.length, targetBefore.length);
-        const afterMax = Math.max(initialAfter.length, targetAfter.length);
-        const beforeDenom = beforeMax === 0 ? 1 : beforeMax;
-        const afterDenom = afterMax === 0 ? 1 : afterMax;
+        const initialText = quoteBefore.textContent || '';
+        const targetText = targetState.text || '';
+        const textMax = Math.max(initialText.length, targetText.length);
+        const textDenom = textMax === 0 ? 1 : textMax;
         const start = performance.now();
-
-        if (targetState.showLook) {
-            quoteEl.classList.remove('quote--no-look');
-            quoteLookWrap.classList.remove('quote__lookWrap--hidden');
-            setQuoteLookText(targetLook);
-        }
 
         const frame = (now) => {
             const elapsed = now - start;
             const progress = Math.min(elapsed / duration, 1);
-            let beforeResult = '';
-            let afterResult = '';
+            let result = '';
 
-            for (let i = 0; i < beforeMax; i++) {
-                if (progress > i / beforeDenom) {
-                    beforeResult += targetBefore[i] ?? '';
+            for (let i = 0; i < textMax; i++) {
+                if (progress > i / textDenom) {
+                    result += targetText[i] ?? '';
                 } else {
-                    const fallback = initialBefore[i] ?? '';
+                    const fallback = initialText[i] ?? '';
                     const randomChar = glitchGlyphs[Math.floor(Math.random() * glitchGlyphs.length)] || fallback;
-                    beforeResult += randomChar;
+                    result += randomChar;
                 }
             }
 
-            for (let i = 0; i < afterMax; i++) {
-                if (progress > i / afterDenom) {
-                    afterResult += targetAfter[i] ?? '';
-                } else {
-                    const fallback = initialAfter[i] ?? '';
-                    const randomChar = glitchGlyphs[Math.floor(Math.random() * glitchGlyphs.length)] || fallback;
-                    afterResult += randomChar;
-                }
-            }
-
-            quoteBefore.textContent = beforeResult;
-            quoteAfter.textContent = afterResult;
+            quoteBefore.textContent = result;
 
             if (progress < 1) {
                 requestAnimationFrame(frame);
             } else {
-                quoteBefore.textContent = targetBefore;
-                quoteAfter.textContent = targetAfter;
-                setQuoteLookText(targetLook);
-
-                if (!targetState.showLook) {
-                    quoteLookWrap.classList.add('quote__lookWrap--hidden');
-                    quoteEl.classList.add('quote--no-look');
-                } else {
-                    requestAnimationFrame(captureLookAnchorPosition);
-                }
+                quoteBefore.textContent = targetText;
 
                 quoteEl.classList.remove('scrambling');
                 delete quoteEl.dataset.swapping;
@@ -821,17 +738,8 @@
         if (!state) return;
 
         if (immediate) {
-            quoteBefore.textContent = state.before || '';
-            quoteAfter.textContent = state.after || '';
-            setQuoteLookText(state.look || getQuoteLookText() || '');
-            if (state.showLook) {
-                quoteEl.classList.remove('quote--no-look');
-                quoteLookWrap.classList.remove('quote__lookWrap--hidden');
-                requestAnimationFrame(captureLookAnchorPosition);
-            } else {
-                quoteLookWrap.classList.add('quote__lookWrap--hidden');
-                quoteEl.classList.add('quote--no-look');
-            }
+            quoteBefore.textContent = state.text || '';
+            quoteAfter.textContent = '';
             quoteEl.classList.remove('scrambling');
             delete quoteEl.dataset.swapping;
             if (typeof onComplete === 'function') {
@@ -845,7 +753,7 @@
 
     function typeLoomTail(text, index = 0) {
         if (index === 0) {
-            loomTail.textContent = '';
+            loomTail.innerHTML = '';
         }
 
         if (index >= text.length) {
@@ -853,111 +761,32 @@
             return;
         }
 
-        loomTail.textContent += text[index];
-        loomTail.classList.add('selected');
+        // Wrap each character in a span
+        const charSpan = document.createElement('span');
+        charSpan.textContent = text[index];
+        charSpan.className = 'loomworks-chunk selected';
+        loomTail.appendChild(charSpan);
+        
+        // Remove selected class from this character only
         setTimeout(() => {
-            loomTail.classList.remove('selected');
+            charSpan.classList.remove('selected');
         }, 140);
+        
         const baseDelay = index < 3 ? 110 : 65;
         const jitter = Math.random() * 55;
         loomworksTypingTimeout = setTimeout(() => typeLoomTail(text, index + 1), baseDelay + jitter);
     }
 
-    function slideLookKToLoomworks() {
-        if (lookKSlideStarted) return;
-        if (!floatingKEl || !loomPost) return;
-
-        const targetRect = loomPost.getBoundingClientRect();
-        if (!targetRect || (!targetRect.width && !targetRect.height)) return;
-
-        lookKSlideStarted = true;
-
-        const launchFloatingK = () => {
-            captureLookAnchorPosition();
-            if (!lookKPosition) {
-                lookKSlideStarted = false;
-                if (quoteLookLast) {
-                    quoteLookLast.classList.remove('quote__lookLast--slide');
-                    quoteLookLast.style.opacity = '';
-                }
-                return;
-            }
-
-            const startX = lookKPosition.x;
-            const startY = lookKPosition.y;
-            const targetX = targetRect.left + targetRect.width / 2;
-            const targetY = targetRect.top + targetRect.height / 2;
-
-            const lookStyle = quoteLook ? window.getComputedStyle(quoteLook) : null;
-            if (lookStyle) {
-                floatingKEl.style.fontSize = lookStyle.fontSize;
-                floatingKEl.style.letterSpacing = lookStyle.letterSpacing;
-            }
-
-            floatingKEl.style.display = 'block';
-            floatingKEl.textContent = quoteLookLast ? (quoteLookLast.textContent || 'K') : 'K';
-            floatingKEl.style.left = `${startX}px`;
-            floatingKEl.style.top = `${startY}px`;
-            floatingKEl.style.setProperty('--floating-k-tx', '0px');
-            floatingKEl.style.setProperty('--floating-k-ty', '0px');
-            floatingKEl.classList.add('floatingK--active');
-
-            if (quoteLookLast) {
-                quoteLookLast.style.opacity = '0';
-            }
-
-            requestAnimationFrame(() => {
-                floatingKEl.classList.add('visible');
-                const dx = targetX - startX;
-                const dy = targetY - startY;
-                floatingKEl.style.setProperty('--floating-k-tx', `${dx}px`);
-                floatingKEl.style.setProperty('--floating-k-ty', `${dy}px`);
-            });
-
-            const handleTransitionEnd = (event) => {
-                if (event.propertyName && !event.propertyName.includes('transform')) return;
-                floatingKEl.removeEventListener('transitionend', handleTransitionEnd);
-                floatingKEl.classList.remove('visible');
-                setTimeout(() => {
-                    floatingKEl.style.display = 'none';
-                    floatingKEl.classList.remove('floatingK--active');
-                    floatingKEl.style.setProperty('--floating-k-tx', '0px');
-                    floatingKEl.style.setProperty('--floating-k-ty', '0px');
-                }, 480);
-            };
-
-            floatingKEl.addEventListener('transitionend', handleTransitionEnd);
-
-            setTimeout(() => {
-                floatingKEl.classList.remove('visible');
-            }, 1400);
-
-            setTimeout(() => {
-                if (quoteLookLast) {
-                    quoteLookLast.classList.remove('quote__lookLast--slide');
-                }
-            }, 800);
-        };
-
-        if (quoteLookLast) {
-            quoteLookLast.style.opacity = '1';
-            quoteLookLast.classList.add('quote__lookLast--slide');
-            setTimeout(launchFloatingK, 180);
-        } else {
-            launchFloatingK();
-        }
-    }
 
     function startLoomworksReveal() {
         if (loomworksRevealStarted) return;
         loomworksRevealStarted = true;
 
-        updateLoomworksOffset();
         loomworksEl.classList.add('visible');
         loomPre.textContent = 'L';
         loomCore.textContent = 'OO';
         loomPost.textContent = 'K';
-        loomTail.textContent = '';
+        loomTail.innerHTML = '';
 
         setTimeout(() => {
             loomCore.classList.add('selected');
@@ -981,10 +810,6 @@
         }, 980);
 
         setTimeout(() => {
-            slideLookKToLoomworks();
-        }, 860);
-
-        setTimeout(() => {
             loomPost.textContent = 'm';
             loomPost.style.opacity = '1';
             loomPost.classList.remove('shift-right');
@@ -1005,14 +830,10 @@
         }, 1340);
 
         setTimeout(() => {
-            loomTail.classList.add('selected');
-            setTimeout(() => {
-                loomTail.classList.remove('selected');
-                if (loomworksTypingTimeout) {
-                    clearTimeout(loomworksTypingTimeout);
-                }
-                typeLoomTail('works Experience.');
-            }, 260);
+            if (loomworksTypingTimeout) {
+                clearTimeout(loomworksTypingTimeout);
+            }
+            typeLoomTail('works Experience.');
         }, 1380);
     }
     
@@ -1248,15 +1069,61 @@
                     }
                 }
 
-                voxel.position.x = posX;
-                voxel.position.y = posY;
-                voxel.scale.set(scaleValue, scaleValue, scaleValue);
+                // Only set default position/scale if not in snap animation
+                if (!snapTogetherStarted || !data.backspaceTransformed) {
+                    voxel.position.x = posX;
+                    voxel.position.y = posY;
+                    voxel.scale.set(scaleValue, scaleValue, scaleValue);
+                }
 
                 if (voxel.material) {
-                    if (data.backspaceTransformed && reactionActive && (t - celliBackspaceSequenceTime) > 1.1) {
-                        const yellowPulse = 0.9 + 0.1 * Math.sin(pulseTime * 2 + data.backspacePulseOffset);
-                        voxel.material.opacity = THREE.MathUtils.clamp(opacityTarget, 0.4, 1.0);
-                        voxel.material.color.setRGB(1.0, 0.95, 0.35 + 0.1 * yellowPulse);
+                    if (data.backspaceTransformed) {
+                        // If VisiCalc green transition has started, skip all other color logic
+                        if (visiCalcGreenTransitionStarted) {
+                            // VisiCalc green color is handled in snap-together animation below
+                            // Don't override it here
+                        } else if (endColorTransitionStart > 0) {
+                            // Handle END sequence color transitions
+                            const colors = {
+                                yellow: { r: 1.0, g: 0.95, b: 0.3 },
+                                magenta: { r: 0.95, g: 0.2, b: 0.4 },
+                                cyan: { r: 0.2, g: 0.7, b: 0.95 },
+                                green: { r: 0.3, g: 0.9, b: 0.4 }
+                            };
+                            
+                            const transitionDuration = 0.6; // 600ms
+                            const elapsed = t - endColorTransitionStart;
+                            const progress = THREE.MathUtils.clamp(elapsed / transitionDuration, 0, 1);
+                            
+                            const fromColor = colors[endColorPrevState];
+                            const toColor = colors[endColorState];
+                            
+                            const r = THREE.MathUtils.lerp(fromColor.r, toColor.r, progress);
+                            const g = THREE.MathUtils.lerp(fromColor.g, toColor.g, progress);
+                            const b = THREE.MathUtils.lerp(fromColor.b, toColor.b, progress);
+                            
+                            // Static color for green (pixel art style), pulse for others
+                            if (endColorState === 'green' && progress >= 1) {
+                                voxel.material.color.setRGB(0.3, 0.9, 0.4);
+                                voxel.material.opacity = 0.95;
+                            } else if (progress >= 1) {
+                                // Transition complete - show final color with pulse
+                                const pulse = Math.sin(t * 2 + data.backspacePulseOffset) * 0.05;
+                                voxel.material.color.setRGB(toColor.r, toColor.g, toColor.b);
+                                voxel.material.opacity = 0.9 + pulse;
+                            } else {
+                                // Mid-transition
+                                const pulse = Math.sin(t * 2 + data.backspacePulseOffset) * 0.05;
+                                voxel.material.color.setRGB(r, g, b);
+                                voxel.material.opacity = 0.9 + pulse;
+                            }
+                        } else {
+                            // Yellow glowing pulse for initial yellow state
+                            const yellowPulse = Math.sin(t * 2 + data.backspacePulseOffset);
+                            voxel.material.opacity = 0.9 + 0.05 * yellowPulse;
+                            const yellowB = 0.3 + 0.1 * yellowPulse;
+                            voxel.material.color.setRGB(1.0, 0.95, yellowB);
+                        }
                     } else {
                         voxel.material.opacity = opacityTarget;
                         voxel.material.color.setRGB(baseColor, baseColor, baseColor);
@@ -1264,12 +1131,1410 @@
                 }
 
                 if (data.edges && data.edges.material) {
-                    data.edges.material.opacity = THREE.MathUtils.clamp(edgeOpacity, 0, 1);
+                    if (data.backspaceTransformed) {
+                        // Handle snap-together: fade out edges DURING green transition
+                        if (snapTogetherStarted) {
+                            const snapElapsed = t - snapTogetherTime;
+                            const vibrateDuration = 0.4;
+                            const jiggleDuration = 0.5;
+                            const greenTransitionDuration = 0.3;
+                            
+                            // Fade out edges during green transition
+                            if (snapElapsed >= vibrateDuration + jiggleDuration) {
+                                // Green transition has started or finished - no edges
+                                data.edges.material.opacity = 0;
+                                data.edges.visible = false;
+                            } else if (snapElapsed >= vibrateDuration) {
+                                // During jiggle - start fading
+                                const fadeProgress = (snapElapsed - vibrateDuration) / jiggleDuration;
+                                data.edges.material.opacity = THREE.MathUtils.lerp(0.6, 0, fadeProgress);
+                            }
+                        } else {
+                            // Edge colors based on END state
+                            if (endColorState === 'magenta') {
+                                data.edges.material.color.setRGB(1.0, 0.3, 0.5);
+                                data.edges.material.opacity = 0.6;
+                            } else if (endColorState === 'cyan') {
+                                data.edges.material.color.setRGB(0.3, 0.8, 1.0);
+                                data.edges.material.opacity = 0.6;
+                            } else if (endColorState === 'green') {
+                                data.edges.material.color.setRGB(0.4, 1.0, 0.5);
+                                data.edges.material.opacity = 0.6;
+                            } else {
+                                // Yellow edges
+                                data.edges.material.color.setRGB(1.0, 0.9, 0.4);
+                                data.edges.material.opacity = 0.6 + 0.1 * Math.sin(t * 2.5 + data.backspacePulseOffset);
+                            }
+                        }
+                    } else {
+                        data.edges.material.opacity = THREE.MathUtils.clamp(edgeOpacity, 0, 1);
+                    }
+                }
+                
+                // Snap-together animation: vibration, then jiggle, then turn green
+                if (snapTogetherStarted && data.backspaceTransformed) {
+                    // Initialize snap time on first frame
+                    if (snapTogetherTime === 0) {
+                        snapTogetherTime = t;
+                        console.log('⏱️ Snap animation started at t =', t);
+                    }
+                    
+                    const snapElapsed = t - snapTogetherTime;
+                    const vibrateDuration = 0.4;
+                    const jiggleDuration = 0.5;
+                    const greenTransitionDuration = 0.3;
+                    const flatHoldDuration = 0.4; // Hold as flat pixels before shrinking
+                    
+                    
+                    if (snapElapsed < vibrateDuration) {
+                        // High-frequency vibration
+                        const vibrateIntensity = 0.015 * (1 - snapElapsed / vibrateDuration);
+                        posX += (Math.random() - 0.5) * vibrateIntensity;
+                        posY += (Math.random() - 0.5) * vibrateIntensity;
+                        voxel.position.x = posX;
+                        voxel.position.y = posY;
+                    } else if (snapElapsed < vibrateDuration + jiggleDuration) {
+                        // Snap closer + jiggle
+                        const jiggleProgress = (snapElapsed - vibrateDuration) / jiggleDuration;
+                        const jiggleIntensity = 0.008 * (1 - jiggleProgress);
+                        
+                        // Pull voxels toward their letter center
+                        const targetCenterX = data.targetX;
+                        const snapAmount = jiggleProgress * 0.3;
+                        posX = THREE.MathUtils.lerp(posX, targetCenterX, snapAmount * 0.1);
+                        posX += Math.sin(t * 15 + data.backspacePulseOffset) * jiggleIntensity;
+                        posY += Math.cos(t * 18 + data.backspacePulseOffset) * jiggleIntensity;
+                        
+                        voxel.position.x = posX;
+                        voxel.position.y = posY;
+                    } else if (snapElapsed < vibrateDuration + jiggleDuration + greenTransitionDuration) {
+                        // Transition to VisiCalc green - turn off bloom immediately
+                        if (!visiCalcGreenTransitionStarted) {
+                            visiCalcGreenTransitionStarted = true;
+                            bloomPass.strength = 0.0; // Immediately turn off bloom
+                            console.log('💚 Green transition started - bloom OFF, edges should be INVISIBLE');
+                            
+                            // REMOVE all edges from scene permanently
+                            voxels.forEach(v => {
+                                if (v.userData.edges) {
+                                    v.remove(v.userData.edges);
+                                    v.userData.edges.geometry.dispose();
+                                    v.userData.edges.material.dispose();
+                                    v.userData.edges = null;
+                                }
+                            });
+                            console.log('🗑️ ALL EDGES REMOVED FROM SCENE');
+                        }
+                        
+                        const greenProgress = (snapElapsed - vibrateDuration - jiggleDuration) / greenTransitionDuration;
+                        const greenColor = { r: 0.0, g: 1.0, b: 0.0 }; // Pure VisiCalc green
+                        
+                        // Get current color
+                        const currentColor = voxel.material.color;
+                        const r = THREE.MathUtils.lerp(currentColor.r, greenColor.r, greenProgress);
+                        const g = THREE.MathUtils.lerp(currentColor.g, greenColor.g, greenProgress);
+                        const b = THREE.MathUtils.lerp(currentColor.b, greenColor.b, greenProgress);
+                        
+                        voxel.material.color.setRGB(r, g, b);
+                        voxel.material.opacity = 1.0; // Solid for pixel art
+                        
+                        // Keep bloom off
+                        bloomPass.strength = 0.0;
+                        
+                        // Collapse into tighter mono-spaced grid
+                        const monoSpacing = 0.022; // Tight pixel spacing
+                        const monoX = data.gridCol * monoSpacing;
+                        const monoY = -data.gridRow * monoSpacing;
+                        const letterOffsetX = data.letterIdx * 5 * monoSpacing; // 5 columns per letter
+                        
+                        posX = THREE.MathUtils.lerp(data.targetX, letterOffsetX + monoX, greenProgress);
+                        posY = THREE.MathUtils.lerp(data.targetY, monoY, greenProgress);
+                        
+                        voxel.position.x = posX;
+                        voxel.position.y = posY;
+                        voxel.scale.set(data.baseScale * 0.95, data.baseScale * 0.95, data.baseScale * 0.95);
+                    } else if (snapElapsed < vibrateDuration + jiggleDuration + greenTransitionDuration + flatHoldDuration) {
+                        // Hold as flat green pixels in mono-spaced positions
+                        bloomPass.strength = 0.0;
+                        voxel.material.color.setRGB(0.0, 1.0, 0.0);
+                        voxel.material.opacity = 1.0;
+                        
+                        // Hold at mono-spaced positions
+                        const monoSpacing = 0.022;
+                        const monoX = data.gridCol * monoSpacing;
+                        const monoY = -data.gridRow * monoSpacing;
+                        const letterOffsetX = data.letterIdx * 5 * monoSpacing;
+                        
+                        voxel.position.x = letterOffsetX + monoX;
+                        voxel.position.y = monoY;
+                        voxel.scale.set(data.baseScale * 0.95, data.baseScale * 0.95, data.baseScale * 0.95);
+                    } else {
+                        // After flat hold, start move to corner
+                        if (!celliMoveToCornerStarted) {
+                            celliMoveToCornerStarted = true;
+                            celliMoveToCornerTime = t;
+                            bloomPass.strength = 0.0;
+                            console.log('🎯 Move to corner started at t =', t);
+                        }
+                    }
+                    
+                    // Move CELLI to corner animation (runs after flat hold)
+                    if (celliMoveToCornerStarted) {
+                        const moveElapsed = t - celliMoveToCornerTime;
+                        const collapseDuration = 0.6; // Collapse to center
+                        const expandDuration = 0.8;   // Expand into VisiCell position
+                        const totalMoveDuration = collapseDuration + expandDuration;
+                        
+                        // Keep bloom off for flat pixel look
+                        bloomPass.strength = 0.0;
+                        
+                        // Keep VisiCalc green color during movement - flat, no glow
+                        voxel.material.color.setRGB(0.0, 1.0, 0.0);
+                        voxel.material.opacity = 1.0;
+                        
+                        // Store mono-spaced starting position if not set
+                        if (!data.monoStartX) {
+                            const monoSpacing = 0.022;
+                            const monoX = data.gridCol * monoSpacing;
+                            const monoY = -data.gridRow * monoSpacing;
+                            const letterOffsetX = data.letterIdx * 5 * monoSpacing;
+                            data.monoStartX = letterOffsetX + monoX;
+                            data.monoStartY = monoY;
+                        }
+                        
+                        if (moveElapsed < collapseDuration) {
+                            // Phase 1: Organic collapse to center with wave motion
+                            const collapseProgress = moveElapsed / collapseDuration;
+                            const collapseEased = collapseProgress * collapseProgress * (3 - 2 * collapseProgress);
+                            
+                            // Add wave motion based on voxel index for organic feel
+                            const waveOffset = (data.letterIdx * 10 + data.gridRow * 3 + data.gridCol) * 0.05;
+                            const waveDelay = Math.max(0, collapseProgress - waveOffset);
+                            const waveEased = Math.min(1, waveDelay * 1.3);
+                            const waveSine = Math.sin(waveEased * Math.PI);
+                            
+                            posX = THREE.MathUtils.lerp(data.monoStartX, 0, waveEased);
+                            posY = THREE.MathUtils.lerp(data.monoStartY, 0, waveEased);
+                            
+                            // Add slight orbital motion during collapse
+                            const orbitAngle = waveEased * Math.PI * 2;
+                            posX += Math.cos(orbitAngle) * (1 - waveEased) * 0.015;
+                            posY += Math.sin(orbitAngle) * (1 - waveEased) * 0.015;
+                            
+                            voxel.position.x = posX;
+                            voxel.position.y = posY;
+                            
+                            // Shrink with pulse
+                            const pulse = waveSine * 0.15;
+                            const currentScale = THREE.MathUtils.lerp(data.baseScale * 0.95, data.baseScale * 0.3, waveEased) * (1 + pulse);
+                            voxel.scale.set(currentScale, currentScale, currentScale);
+                            
+                            // Keep fully visible during collapse
+                            voxel.material.opacity = 1.0;
+                        } else if (moveElapsed < totalMoveDuration) {
+                            // Phase 2: Expand into VisiCell position
+                            const expandProgress = (moveElapsed - collapseDuration) / expandDuration;
+                            const expandEased = expandProgress < 0.5 ? 
+                                2 * expandProgress * expandProgress : 
+                                1 - Math.pow(-2 * expandProgress + 2, 2) / 2;
+                            
+                            // Target position: top-left corner (where "A1: CELLI" appears)
+                            const targetX = -0.85;
+                            const targetY = 0.75;
+                            const targetScale = 0.45; // Smaller for VisiCell text
+                            
+                            // Calculate target offset based on grid position
+                            const visiCellSpacing = 0.018; // Tighter for VisiCell
+                            const targetOffsetX = data.gridCol * visiCellSpacing;
+                            const targetOffsetY = -data.gridRow * visiCellSpacing;
+                            const targetLetterOffset = data.letterIdx * 5 * visiCellSpacing;
+                            
+                            posX = THREE.MathUtils.lerp(0, targetX + targetLetterOffset + targetOffsetX, expandEased);
+                            posY = THREE.MathUtils.lerp(0, targetY + targetOffsetY, expandEased);
+                            
+                            voxel.position.x = posX;
+                            voxel.position.y = posY;
+                            
+                            // Expand from collapsed size to target size
+                            const currentScale = THREE.MathUtils.lerp(data.baseScale * 0.3, data.baseScale * targetScale, expandEased);
+                            voxel.scale.set(currentScale, currentScale, currentScale);
+                        } else {
+                            // Hold at final VisiCell position
+                            const targetX = -0.85;
+                            const targetY = 0.75;
+                            const targetScale = 0.45;
+                            const visiCellSpacing = 0.018;
+                            const targetOffsetX = data.gridCol * visiCellSpacing;
+                            const targetOffsetY = -data.gridRow * visiCellSpacing;
+                            const targetLetterOffset = data.letterIdx * 5 * visiCellSpacing;
+                            
+                            voxel.position.x = targetX + targetLetterOffset + targetOffsetX;
+                            voxel.position.y = targetY + targetOffsetY;
+                            voxel.scale.set(data.baseScale * targetScale, data.baseScale * targetScale, data.baseScale * targetScale);
+                            
+                            // Show VisiCell once animation is complete (only trigger once)
+                            if (!visiCalcShown) {
+                                visiCalcShown = true;
+                                console.log('✅ Move-to-corner animation complete, showing VisiCell');
+                                showVisiCalc();
+                            }
+                        }
+                    }
                 }
             }
         });
     }
 
+    // Restore one voxel from the glitched stack with fritz effect
+    function restoreOneLetter() {
+        if (restoredLetters >= lettersToRestore.length) return false;
+        
+        const letterKey = lettersToRestore[restoredLetters];
+        const letterVoxelsList = letterVoxels[letterKey];
+        
+        if (!letterVoxelsList || letterVoxelsList.length === 0) return false;
+        
+        // Play electrical fritz sound
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        
+        // Bigger fritz sound for whole letter
+        const buzz = audioCtx.createOscillator();
+        const buzzGain = audioCtx.createGain();
+        
+        buzz.type = 'sawtooth';
+        buzz.frequency.setValueAtTime(150, now);
+        buzz.frequency.exponentialRampToValueAtTime(100, now + 0.25);
+        
+        buzzGain.gain.setValueAtTime(0, now);
+        buzzGain.gain.linearRampToValueAtTime(0.1, now + 0.02);
+        buzzGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        
+        buzz.connect(buzzGain);
+        buzzGain.connect(audioCtx.destination);
+        buzz.start(now);
+        buzz.stop(now + 0.25);
+        
+        // Restore all voxels in this letter with staggered timing
+        letterVoxelsList.forEach((voxel, idx) => {
+            const data = voxel.userData;
+            const delay = idx * 30; // Stagger by 30ms per voxel
+            
+            setTimeout(() => {
+                // Make visible again
+                voxel.visible = true;
+                data.edges.visible = true;
+                data.glitched = false;
+                
+                // Start with dark gray
+                voxel.material.color.setRGB(0.15, 0.15, 0.15);
+                data.edges.material.color.setRGB(0.2, 0.2, 0.2);
+                voxel.material.opacity = 0.2;
+                data.edges.material.opacity = 0.1;
+                
+                // Fritz flicker effect
+                let flickerCount = 0;
+                const maxFlickers = 6;
+                const flickerInterval = setInterval(() => {
+                    flickerCount++;
+                    const flickerOn = flickerCount % 2 === 1;
+                    
+                    if (flickerOn) {
+                        voxel.material.color.setRGB(0.9, 0.9, 0.9);
+                        voxel.material.opacity = 0.85;
+                        data.edges.material.opacity = 0.6;
+                    } else {
+                        voxel.material.color.setRGB(0.3, 0.3, 0.3);
+                        voxel.material.opacity = 0.3;
+                        data.edges.material.opacity = 0.2;
+                    }
+                    
+                    if (flickerCount >= maxFlickers) {
+                        clearInterval(flickerInterval);
+                        
+                        // Restore to normal white/bright state
+                        const restoreStart = Date.now();
+                        const restoreDuration = 200;
+                        const restoreInterval = setInterval(() => {
+                            const restoreProgress = (Date.now() - restoreStart) / restoreDuration;
+                            if (restoreProgress >= 1) {
+                                clearInterval(restoreInterval);
+                                voxel.material.color.setRGB(0.8, 0.8, 0.8);
+                                voxel.material.opacity = 0.75;
+                                data.edges.material.opacity = 0.35;
+                            } else {
+                                const brightness = THREE.MathUtils.lerp(0.3, 0.8, restoreProgress);
+                                voxel.material.color.setRGB(brightness, brightness, brightness);
+                                voxel.material.opacity = THREE.MathUtils.lerp(0.3, 0.75, restoreProgress);
+                                data.edges.material.opacity = THREE.MathUtils.lerp(0.2, 0.35, restoreProgress);
+                            }
+                        }, 16);
+                    }
+                }, 70);
+            }, delay);
+        });
+        
+        restoredLetters++;
+        
+        // If all 4 letters restored (C, E, L, L), automatically restore I and transform
+        if (restoredLetters === 4) {
+            setTimeout(() => {
+                restoreIAndTransform();
+            }, 800);
+        }
+        
+        return true;
+    }
+    
+    function restoreIAndTransform() {
+        const iVoxels = letterVoxels.I;
+        
+        // Play final restoration sound
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        
+        const buzz = audioCtx.createOscillator();
+        const buzzGain = audioCtx.createGain();
+        
+        buzz.type = 'sine';
+        buzz.frequency.setValueAtTime(200, now);
+        buzz.frequency.exponentialRampToValueAtTime(400, now + 0.4);
+        
+        buzzGain.gain.setValueAtTime(0, now);
+        buzzGain.gain.linearRampToValueAtTime(0.12, now + 0.05);
+        buzzGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        
+        buzz.connect(buzzGain);
+        buzzGain.connect(audioCtx.destination);
+        buzz.start(now);
+        buzz.stop(now + 0.4);
+        
+        // Restore I voxels quickly
+        iVoxels.forEach((voxel, idx) => {
+            const data = voxel.userData;
+            const delay = idx * 20;
+            
+            setTimeout(() => {
+                voxel.visible = true;
+                data.edges.visible = true;
+                data.glitched = false;
+                voxel.material.color.setRGB(0.8, 0.8, 0.8);
+                voxel.material.opacity = 0.75;
+                data.edges.material.opacity = 0.35;
+            }, delay);
+        });
+        
+        // After brief pause, transform all CELLI to yellow rounded glow
+        setTimeout(() => {
+            transformCelliToYellow();
+        }, 600);
+    }
+    
+    function transformCelliToYellow() {
+        // Transform all voxels to yellow with rounded corners, pop shrink/burst animation
+        voxels.forEach((voxel, idx) => {
+            const data = voxel.userData;
+            const delay = idx * 15; // Stagger transformation
+            
+            setTimeout(() => {
+                // Phase 1: Shrink inward (pop preparation)
+                const shrinkStart = Date.now();
+                const shrinkDuration = 150;
+                
+                const shrinkInterval = setInterval(() => {
+                    const progress = (Date.now() - shrinkStart) / shrinkDuration;
+                    if (progress >= 1) {
+                        clearInterval(shrinkInterval);
+                        
+                        // Phase 2: Burst outward + transform to rounded + yellow color
+                        const burstStart = Date.now();
+                        const burstDuration = 300;
+                        
+                        // Change to rounded geometry
+                        voxel.geometry.dispose();
+                        voxel.geometry = roundedVoxelGeo.clone();
+                        voxel.remove(data.edges);
+                        const newEdges = new THREE.LineSegments(roundedEdgesGeo, edgeMat.clone());
+                        voxel.add(newEdges);
+                        data.edges = newEdges;
+                        
+                        const burstInterval = setInterval(() => {
+                            const burstProgress = (Date.now() - burstStart) / burstDuration;
+                            if (burstProgress >= 1) {
+                                clearInterval(burstInterval);
+                                
+                                // Phase 3: Settle to yellow
+                                voxel.scale.set(data.baseScale, data.baseScale, data.baseScale);
+                                voxel.material.color.setRGB(1.0, 0.95, 0.3);
+                                voxel.material.opacity = 0.9;
+                                data.edges.material.color.setRGB(1.0, 0.9, 0.4);
+                                data.edges.material.opacity = 0.6;
+                                data.backspaceTransformed = true;
+                                allYellowTransformed = true;
+                            } else {
+                                // Burst scale and color change
+                                const scale = data.baseScale * THREE.MathUtils.lerp(0.5, 1.15, burstProgress);
+                                voxel.scale.set(scale, scale, scale);
+                                
+                                const r = THREE.MathUtils.lerp(0.8, 1.0, burstProgress);
+                                const g = THREE.MathUtils.lerp(0.8, 0.95, burstProgress);
+                                const b = THREE.MathUtils.lerp(0.8, 0.3, burstProgress);
+                                voxel.material.color.setRGB(r, g, b);
+                                data.edges.material.color.setRGB(
+                                    THREE.MathUtils.lerp(0.8, 1.0, burstProgress),
+                                    THREE.MathUtils.lerp(0.8, 0.9, burstProgress),
+                                    0.4
+                                );
+                            }
+                        }, 16);
+                    } else {
+                        // Shrink scale
+                        const scale = data.baseScale * THREE.MathUtils.lerp(1.0, 0.5, progress);
+                        voxel.scale.set(scale, scale, scale);
+                    }
+                }, 16);
+            }, delay);
+        });
+    }
+    
+    // Transform voxels to magenta-red (E input)
+    function transformToMagentaRed() {
+        endColorPrevState = endColorState;
+        endColorState = 'magenta';
+        endColorTransitionStart = totalTime;
+    }
+    
+    // Transform voxels to cyan-blue (N input)
+    function transformToCyanBlue() {
+        endColorPrevState = endColorState;
+        endColorState = 'cyan';
+        endColorTransitionStart = totalTime;
+    }
+    
+    // Transform voxels to green and snap back to non-rounded (D input)
+    function transformToGreenAndSquare() {
+        console.log('🟢 transformToGreenAndSquare called');
+        endColorPrevState = endColorState;
+        endColorState = 'green';
+        endColorTransitionStart = totalTime;
+        
+        // Change back to square geometry immediately
+        voxels.forEach((voxel, idx) => {
+            const data = voxel.userData;
+            if (!data.backspaceTransformed) return;
+            
+            setTimeout(() => {
+                voxel.geometry.dispose();
+                voxel.geometry = voxelGeo.clone();
+                voxel.remove(data.edges);
+                const newEdges = new THREE.LineSegments(edgesGeo, edgeMat.clone());
+                voxel.add(newEdges);
+                data.edges = newEdges;
+            }, idx * 8);
+        });
+        
+        // Start snap-together animation immediately (color transition happens simultaneously)
+        snapTogetherStarted = true;
+        console.log('🟢 snapTogetherStarted set to true');
+        
+        // VisiCell will be shown after animation completes (triggered in updateVoxels)
+        // snapTogetherTime will be set on first frame in updateVoxels
+    }
+    
+    // Animate skip triangles to form a bow above CELLI
+    function animateSkipToBow() {
+        const skipBtn = document.getElementById('skipBtn');
+        const tri1 = document.getElementById('skipTriangle1');
+        const tri2 = document.getElementById('skipTriangle2');
+        
+        if (!skipBtn || !tri1 || !tri2) return;
+        
+        console.log('🎀 Animating skip button to bow');
+        
+        // Make visible if hidden
+        skipBtn.classList.remove('hidden');
+        
+        // Step 1: Flip the right triangle vertically over 0.6s
+        tri2.style.transition = 'transform 0.6s ease-in-out';
+        tri2.style.transform = 'scaleY(-1)'; // Vertical flip
+        
+        setTimeout(() => {
+            // Step 2: Position both triangles to form bow shape (vertices touching at center)
+            // Each triangle has border-left: 12px, so the vertex is at x=0 of the element
+            // Triangle 1 (left): points right by default, rotate to point up-left
+            tri1.style.transition = 'none';
+            tri1.style.transform = 'rotate(135deg) scale(1.6)';
+            tri1.style.position = 'absolute';
+            tri1.style.left = 'calc(50% - 12px)'; // Position so right vertex is at center
+            tri1.style.top = '0';
+            tri1.style.transformOrigin = 'right center';
+            
+            // Triangle 2 (right): flipped vertically, rotate to point up-right
+            tri2.style.transition = 'none';
+            tri2.style.transform = 'scaleY(-1) rotate(-135deg) scale(1.6)';
+            tri2.style.position = 'absolute';
+            tri2.style.left = 'calc(50%)'; // Position so left vertex is at center
+            tri2.style.top = '0';
+            tri2.style.transformOrigin = 'left center';
+            
+            // Step 3: Move the entire bow as a unit to above C (first letter of CELLI)
+            setTimeout(() => {
+                skipBtn.classList.add('bow-mode');
+                skipBtn.style.transition = 'all 1.2s ease-out';
+                // Position is handled by CSS (35% from left to adorn the C)
+            }, 50);
+        }, 650);
+    }
+    
+    // Show VisiCell spreadsheet
+    function showVisiCalc() {
+        console.log('📺 showVisiCalc called!');
+        // Fade out doorway
+        const doorway = document.getElementById('doorway');
+        if (doorway) {
+            doorway.style.transition = 'opacity 0.5s ease';
+            doorway.style.opacity = '0';
+            console.log('📺 Doorway faded out');
+        }
+        
+        // Create VisiCell overlay (appears behind 3D scene initially)
+        const visiCalc = document.createElement('div');
+        visiCalc.id = 'visicalc';
+        visiCalc.style.cssText = `
+            position: fixed;
+            inset: 0;
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 20px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            overflow: hidden;
+        `;
+        
+        // Create VisiCell content (without CELLI in row 1 - the 3D pixels will be that)
+        visiCalc.innerHTML = `
+            <div style="border: 2px solid #0f0; padding: 10px; height: calc(100% - 40px); background: #000; opacity: 0; transition: opacity 0.6s ease;" id="visicalc-frame">
+                <div style="border-bottom: 1px solid #0f0; padding-bottom: 5px; margin-bottom: 10px; opacity: 0; animation: fadeInVisi 0.4s ease forwards 0.2s; font-size: 13px; font-family: 'Courier New', monospace;">
+                    <span style="float: left;">VISICELL</span>
+                    <span style="float: right;">LOOMWORKS CELL</span>
+                    <div style="clear: both;"></div>
+                </div>
+                    <div style="font-family: 'Courier New', monospace; white-space: pre; line-height: 1.6; font-size: 13px; opacity: 0; animation: fadeInVisi 0.5s ease forwards 0.5s;">
+>A1:
+     A            B            C            D            E            F
+1  
+2
+3    LOOK
+4
+5    END
+6
+7    =STAR                     =T
+8
+9
+10
+11
+12
+13
+14
+15   =TRANSPOSE()
+16
+17
+18
+19
+20   LOOMWORKS
+                </div>
+                <div style="position: absolute; top: 60%; left: 50px; text-align: left; opacity: 0; animation: fadeInVisi 0.6s ease forwards 1.2s; font-size: 13px; color: #0f0; font-family: 'Courier New', monospace; line-height: 1.6;">
+23   >:(<br>
+24   This isn't Stanley Parable. Don't try that again.
+                </div>
+                <div id="visicellinput" style="position: absolute; bottom: 30px; left: 30px; border-top: 1px solid #0f0; padding-top: 10px; opacity: 0; animation: fadeInVisi 0.3s ease forwards 1s; cursor: text; font-family: 'Courier New', monospace; font-size: 13px; z-index: 100; pointer-events: auto;">
+                    <span id="visicellprompt">ENTE<span style="animation: blink 1s step-end infinite;">_</span></span>
+                </div>
+            </div>
+            <style>
+                @keyframes fadeInVisi {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes matrixShake {
+                    0% { transform: translate(0, 0); }
+                    25% { transform: translate(-2px, 2px); }
+                    50% { transform: translate(2px, -2px); }
+                    75% { transform: translate(-2px, -2px); }
+                    100% { transform: translate(2px, 2px); }
+                }
+            </style>
+        `;
+        
+        document.body.appendChild(visiCalc);
+        
+        // Snap VisiCell into view immediately
+        visiCalc.style.opacity = '1';
+        
+        const frame = document.getElementById('visicalc-frame');
+        if (frame) {
+            frame.style.opacity = '1';
+        }
+        
+        // Immediately show all content (override animations)
+        const allAnimated = visiCalc.querySelectorAll('[style*="animation"]');
+        allAnimated.forEach(el => {
+            el.style.opacity = '1';
+            el.style.animation = 'none';
+        });
+        
+        // Setup terminal input system immediately
+        setTimeout(() => {
+            setupTerminalInput();
+        }, 100);
+        
+        // Fade out 3D renderer immediately
+        renderer.domElement.style.transition = 'opacity 0.5s ease';
+        renderer.domElement.style.opacity = '0';
+        
+        // Stop rendering 3D scene
+        setTimeout(() => {
+            running = false;
+        }, 500);
+    }
+    
+    let terminalInput = 'ENTE';
+    let terminalActive = false;
+    let rInfectionStarted = false;
+    let rInfectionStage = 0;
+    
+    function setupTerminalInput() {
+        console.log('⌨️ Terminal input system activated');
+        terminalActive = true;
+        
+        const inputEl = document.getElementById('visicellinput');
+        const promptEl = document.getElementById('visicellprompt');
+        const visiCalc = document.getElementById('visicalc');
+        const frame = document.getElementById('visicalc-frame');
+        if (!inputEl || !promptEl) return;
+        
+        // Clicking anywhere (except input area) triggers R infection
+        if (visiCalc) {
+            visiCalc.addEventListener('click', (e) => {
+                // Don't trigger if clicking on input area
+                if (e.target.id === 'visicellinput' || e.target.id === 'visicellprompt' || e.target.closest('#visicellinput')) {
+                    return;
+                }
+                if (terminalActive) {
+                    triggerRInfection(frame);
+                }
+            });
+        }
+        
+        // Handle keyboard input
+        document.addEventListener('keydown', (e) => {
+            if (!terminalActive) return;
+            
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                if (terminalInput.length > 0) {
+                    terminalInput = terminalInput.slice(0, -1);
+                    updateTerminalPrompt();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                handleTerminalCommand();
+            } else if (e.key.length === 1 && /[a-zA-Z0-9._]/.test(e.key)) {
+                e.preventDefault();
+                terminalInput += e.key.toUpperCase();
+                updateTerminalPrompt();
+            }
+        });
+        
+        updateTerminalPrompt();
+    }
+    
+    function updateTerminalPrompt() {
+        const promptEl = document.getElementById('visicellprompt');
+        if (!promptEl) return;
+        promptEl.innerHTML = terminalInput + '<span style="animation: blink 1s step-end infinite;">_</span>';
+    }
+    
+    function handleTerminalCommand() {
+        const cmd = terminalInput.trim();
+        const frame = document.getElementById('visicalc-frame');
+        console.log('🖥️ Terminal command:', cmd);
+        
+        if (cmd === 'ENTER') {
+            triggerRInfection(frame);
+        } else if (cmd === 'EXIT') {
+            triggerExitCube(frame);
+        } else if (cmd === 'LEAVE') {
+            triggerLeaveSequence(frame);
+        } else if (cmd.toLowerCase() === 'myhouse.wad') {
+            terminalResponse(frame, '"Too scary. How about OurHouse.loom?"');
+        } else if (cmd.toLowerCase() === 'ourhouse.loom') {
+            terminalResponse(frame, '"Huh... Not found. I must have renamed it. I asked my friends Crosby, Stills, Nash AND Young, none of them knew. Maybe wrong band."');
+        } else if (cmd.toLowerCase() === 'madness.loom') {
+            triggerVictory(frame);
+        } else {
+            terminalResponse(frame, `Command not recognized: ${cmd}`);
+        }
+    }
+    
+    function terminalResponse(frame, message) {
+        if (!frame) return;
+        const responseDiv = document.createElement('div');
+        responseDiv.style.cssText = 'margin-top: 10px; color: #0f0; font-family: "Courier New", monospace; font-size: 13px;';
+        responseDiv.textContent = message;
+        frame.appendChild(responseDiv);
+        
+        // Reset input
+        terminalInput = '';
+        updateTerminalPrompt();
+    }
+    
+    let rInfectionProcessing = false;
+    
+    function triggerRInfection(frame) {
+        if (!frame) return;
+        
+        // Prevent rapid clicking from breaking the sequence
+        if (rInfectionProcessing) {
+            console.log('⏸️ R infection already in progress, ignoring click');
+            return;
+        }
+        
+        if (rInfectionStarted) {
+            console.log('🔴 R infection already started, ignoring additional clicks');
+            return;
+        }
+        
+        rInfectionStarted = true;
+        rInfectionProcessing = true;
+        rInfectionStage = 1;
+        console.log('🔴 R infection stage 1 - infecting existing text');
+        
+        // Stage 1: Infect existing text characters with Rs
+        progressRInfection(frame);
+    }
+    
+    function progressRInfection(frame) {
+        console.log('🔴 R infection stage', rInfectionStage);
+        
+        if (rInfectionStage === 1) {
+            // Stage 1: Cascade Rs through existing text (but not input)
+            const allText = frame.querySelectorAll('*:not(#rHint):not(#visicellinput):not(#visicellprompt)');
+            const textNodes = [];
+            allText.forEach(el => {
+                // Skip input-related elements
+                if (el.id === 'visicellinput' || el.id === 'visicellprompt' || el.closest('#visicellinput')) {
+                    return;
+                }
+                if (el.childNodes.length > 0) {
+                    el.childNodes.forEach(node => {
+                        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+                            textNodes.push(node);
+                        }
+                    });
+                }
+            });
+            
+            const originalTexts = textNodes.map(n => n.textContent);
+            const infectionDuration = 2500;
+            const infectionStart = Date.now();
+            
+            const infectionInterval = setInterval(() => {
+                const elapsed = Date.now() - infectionStart;
+                const progress = elapsed / infectionDuration;
+                
+                if (progress >= 1) {
+                    clearInterval(infectionInterval);
+                    // Auto-progress to stage 2 (type ASCII R)
+                    setTimeout(() => {
+                        rInfectionStage++;
+                        progressRInfection(frame);
+                    }, 800);
+                } else {
+                    textNodes.forEach((node, idx) => {
+                        const nodeProgress = Math.max(0, progress - (idx * 0.03));
+                        if (nodeProgress > 0) {
+                            const original = originalTexts[idx];
+                            const infected = original.split('').map((c) => {
+                                if (c === ' ' || c === '\n') return c;
+                                if (Math.random() < nodeProgress * 1.5) return 'R';
+                                return c;
+                            }).join('');
+                            node.textContent = infected;
+                        }
+                    });
+                }
+            }, 50);
+            
+        } else if (rInfectionStage === 2) {
+            // Stage 2: From infected text, organically type out ASCII R
+            let rHint = document.getElementById('rHint');
+            if (!rHint) {
+                rHint = document.createElement('div');
+                rHint.id = 'rHint';
+                rHint.style.cssText = `
+                    position: absolute;
+                    top: 30%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    font-family: 'Courier New', monospace;
+                    white-space: pre;
+                    text-align: left;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    color: #0f0;
+                    text-shadow: 0 0 8px #0f0, 0 0 12px #0f0;
+                    opacity: 1;
+                    pointer-events: none;
+                    z-index: 55;
+                `;
+                frame.appendChild(rHint);
+            }
+            
+            const asciiR = `
+RRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRR
+RRRR       RRRR
+RRRR       RRRR
+RRRR       RRRR
+RRRR       RRRR
+RRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRR
+RRRRRRRRRRR    
+RRRR    RRRR   
+RRRR      RRRR 
+RRRR        RRRR
+RRRR          RRRR
+RRRR            RRRR`;
+            
+            // Type out character by character with polished timing
+            let charIndex = 0;
+            const typeInterval = setInterval(() => {
+                if (charIndex < asciiR.length) {
+                    rHint.textContent = asciiR.substring(0, charIndex + 1);
+                    charIndex++;
+                } else {
+                    clearInterval(typeInterval);
+                    
+                    // Pulse effect after typing completes
+                    let pulseCount = 0;
+                    const pulseInterval = setInterval(() => {
+                        const intensity = Math.sin(pulseCount * 0.3);
+                        rHint.style.textShadow = `0 0 ${8 + intensity * 6}px #0f0, 0 0 ${12 + intensity * 8}px #0f0`;
+                        pulseCount++;
+                        
+                        if (pulseCount > 15) { // 3 pulses
+                            clearInterval(pulseInterval);
+                            // Auto-progress after the R is appreciated
+                            setTimeout(() => {
+                                rInfectionStage++;
+                                progressRInfection(frame);
+                            }, 800);
+                        }
+                    }, 100);
+                }
+            }, 20); // Smooth, fast typing
+            
+        } else if (rInfectionStage === 3) {
+            // Stage 3: From ASCII R, organically grow matrix data fall
+            startMatrixDataFallOrganic(frame);
+            
+            // Auto-progress to forming R
+            setTimeout(() => {
+                rInfectionStage++;
+                progressRInfection(frame);
+            }, 3500);
+            
+        } else if (rInfectionStage === 4) {
+            // Stage 4: Matrix stops and forms large falling R in BLACK (negative space)
+            stopMatrixAndFormBlackR(frame);
+            
+            // Auto-progress to voice
+            setTimeout(() => {
+                rInfectionStage++;
+                progressRInfection(frame);
+            }, 3000);
+            
+        } else if (rInfectionStage >= 5) {
+            // Stage 5: Text-to-speech "R" (are) on loop
+            playTextToSpeechR();
+        }
+    }
+    
+    function playTextToSpeechR() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Synthesize "are" sound using oscillators
+        function speakR() {
+            const now = audioCtx.currentTime;
+            const duration = 0.6;
+            
+            // "Are" has an "ah" vowel transitioning to "r"
+            const vowelOsc = audioCtx.createOscillator();
+            const vowelGain = audioCtx.createGain();
+            const vowelFilter = audioCtx.createBiquadFilter();
+            
+            // Vowel formants for "ah" -> "r"
+            vowelOsc.type = 'sawtooth';
+            vowelOsc.frequency.setValueAtTime(120, now); // Base pitch
+            
+            vowelFilter.type = 'bandpass';
+            vowelFilter.frequency.setValueAtTime(700, now); // "ah" formant
+            vowelFilter.frequency.linearRampToValueAtTime(500, now + duration); // transition to "r"
+            vowelFilter.Q.value = 5;
+            
+            vowelGain.gain.setValueAtTime(0, now);
+            vowelGain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+            vowelGain.gain.linearRampToValueAtTime(0.12, now + duration - 0.1);
+            vowelGain.gain.linearRampToValueAtTime(0, now + duration);
+            
+            vowelOsc.connect(vowelFilter);
+            vowelFilter.connect(vowelGain);
+            vowelGain.connect(audioCtx.destination);
+            
+            vowelOsc.start(now);
+            vowelOsc.stop(now + duration);
+        }
+        
+        // Play immediately and loop every 2 seconds
+        speakR();
+        setInterval(speakR, 2000);
+    }
+    
+    let matrixInterval = null;
+    let matrixDrops = [];
+    let matrixOpacity = 0;
+    
+    function startMatrixDataFallOrganic(frame) {
+        console.log('🌊 Starting organic matrix data fall');
+        const matrixChars = 'R∅01';
+        
+        // Calculate columns and rows based on frame size (not full viewport)
+        const frameRect = frame.getBoundingClientRect();
+        const columns = Math.floor(frameRect.width / 8);
+        const rows = Math.floor(frameRect.height / 21);
+        
+        console.log(`📐 Matrix dimensions: ${columns} cols x ${rows} rows (frame: ${frameRect.width}x${frameRect.height})`);
+        matrixDrops = Array(columns).fill(0).map(() => Math.floor(Math.random() * rows));
+        
+        // Check if matrix container already exists
+        let container = document.getElementById('matrixContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'matrixContainer';
+            // Position inside frame's padding, respecting the border
+            container.style.cssText = 'font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6; color: #0f0; text-shadow: 0 0 2px #0f0; white-space: pre; overflow: hidden; width: calc(100% - 20px); height: calc(100% - 20px); position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 50; background: transparent; margin: 0; padding: 0; opacity: 0; transition: opacity 1.2s ease, background-color 1.5s ease;';
+            frame.appendChild(container);
+            console.log('✅ Matrix container created (within frame, respecting border)');
+        } else {
+            // Reset existing container
+            container.style.cssText = 'font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6; color: #0f0; text-shadow: 0 0 2px #0f0; white-space: pre; overflow: hidden; width: calc(100% - 20px); height: calc(100% - 20px); position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 50; background: transparent; margin: 0; padding: 0; opacity: 0; transition: opacity 1.2s ease, background-color 1.5s ease;';
+            console.log('♻️ Matrix container reset (within frame, respecting border)');
+        }
+        
+        if (matrixInterval) {
+            clearInterval(matrixInterval);
+            console.log('🛑 Cleared existing matrix interval');
+        }
+        
+        // Gradually fade in matrix over existing content - smooth and polished
+        matrixOpacity = 0;
+        const fadeInInterval = setInterval(() => {
+            matrixOpacity += 0.03; // Slower, smoother fade
+            if (matrixOpacity >= 1) {
+                matrixOpacity = 1;
+                clearInterval(fadeInInterval);
+                // Fade background to black after matrix is visible - keep border visible
+                setTimeout(() => {
+                    container.style.backgroundColor = 'rgba(0, 0, 0, 0.95)'; // Slightly transparent to show frame
+                }, 800);
+            }
+            container.style.opacity = matrixOpacity.toString();
+        }, 60);
+        
+        matrixInterval = setInterval(() => {
+            let output = '';
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < columns; j++) {
+                    if (matrixDrops[j] === i) {
+                        output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                    } else if (matrixDrops[j] > i && matrixDrops[j] - i < 8) {
+                        // Trail effect
+                        output += Math.random() > 0.5 ? matrixChars[Math.floor(Math.random() * matrixChars.length)] : ' ';
+                    } else {
+                        output += ' ';
+                    }
+                }
+                output += '\n';
+            }
+            container.textContent = output;
+            
+            matrixDrops.forEach((drop, i) => {
+                if (drop > rows && Math.random() > 0.975) {
+                    matrixDrops[i] = 0;
+                } else {
+                    matrixDrops[i]++;
+                }
+            });
+        }, 60);
+        
+        console.log('🔄 Organic matrix interval started');
+    }
+    
+    function stopMatrixAndFormBlackR(frame) {
+        console.log('🔴 Organically forming BLACK R in negative space');
+        
+        // DON'T stop the matrix fall - let it continue underneath
+        // Instead, gradually transform it into the R shape
+        
+        const matrixChars = 'R∅01';
+        
+        // Calculate dimensions based on frame size (not full viewport)
+        const frameRect = frame.getBoundingClientRect();
+        const cols = Math.floor(frameRect.width / 8);
+        const rows = Math.floor(frameRect.height / 21);
+        
+        // Create larger R pattern centered in the grid
+        const rWidth = 30;
+        const rHeight = 19;
+        const startCol = Math.floor((cols - rWidth) / 2);
+        const startRow = Math.floor((rows - rHeight) / 2);
+        
+        console.log(`🎨 R dimensions: ${rWidth}x${rHeight} at col ${startCol}, row ${startRow} (frame: ${cols}x${rows})`);
+        
+        const container = document.getElementById('matrixContainer');
+        if (container) {
+            // Ensure full opacity and black background - polished transition
+            container.style.backgroundColor = 'rgba(0, 0, 0, 0.98)'; // Keep border slightly visible
+            container.style.opacity = '1';
+            container.style.textShadow = '0 0 4px #0f0, 0 0 8px #0f0'; // Enhanced glow
+            
+            // R shape pattern (1 = filled with green chars, 0 = empty/black space)
+            const rPattern = [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0],
+            ];
+            
+            // Function to check if a position is part of the R
+            const isR = (row, col) => {
+                const relRow = row - startRow;
+                const relCol = col - startCol;
+                if (relRow >= 0 && relRow < rPattern.length && 
+                    relCol >= 0 && relCol < rPattern[0].length) {
+                    return rPattern[relRow][relCol] === 1;
+                }
+                return false;
+            };
+            
+            // Stop the falling matrix interval
+            if (matrixInterval) {
+                clearInterval(matrixInterval);
+                matrixInterval = null;
+            }
+            
+            // AWESOME organic transition from matrix fall to R shape
+            let transitionProgress = 0;
+            const transitionDuration = 80; // Longer for more dramatic effect
+            
+            const formRInterval = setInterval(() => {
+                transitionProgress++;
+                const progress = Math.min(transitionProgress / transitionDuration, 1);
+                
+                // Eased progress for smoother animation
+                const easedProgress = progress < 0.5 
+                    ? 4 * progress * progress * progress 
+                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                
+                let output = '';
+                for (let i = 0; i < rows; i++) {
+                    for (let j = 0; j < cols; j++) {
+                        // Determine if this position should show the R
+                        const shouldBeR = isR(i, j);
+                        const random = Math.random();
+                        
+                        if (shouldBeR) {
+                            // R area: gradually consolidate matrix characters with wave effect
+                            const distanceFromCenter = Math.abs(i - startRow - rHeight/2) + Math.abs(j - startCol - rWidth/2);
+                            const localProgress = Math.max(0, easedProgress - (distanceFromCenter * 0.01));
+                            
+                            if (random < localProgress || easedProgress > 0.6) {
+                                output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                            } else {
+                                output += random < 0.3 ? matrixChars[Math.floor(Math.random() * matrixChars.length)] : ' ';
+                            }
+                        } else {
+                            // Non-R area: gradually clear to black with ripple effect
+                            const distanceFromR = Math.min(
+                                Math.abs(i - startRow),
+                                Math.abs(i - (startRow + rHeight)),
+                                Math.abs(j - startCol),
+                                Math.abs(j - (startCol + rWidth))
+                            );
+                            const clearProgress = Math.min(easedProgress + (distanceFromR * 0.005), 1);
+                            
+                            if (random > clearProgress) {
+                                output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                            } else {
+                                output += ' ';
+                            }
+                        }
+                    }
+                    output += '\n';
+                }
+                container.textContent = output;
+                
+                // After transition, animate the R characters with polish
+                if (transitionProgress >= transitionDuration) {
+                    clearInterval(formRInterval);
+                    
+                    // Continuously animate R characters with subtle pulsing
+                    let animFrame = 0;
+                    const animInterval = setInterval(() => {
+                        let output = '';
+                        const pulseIntensity = Math.sin(animFrame * 0.1) * 0.3 + 0.7; // Subtle pulse
+                        
+                        for (let i = 0; i < rows; i++) {
+                            for (let j = 0; j < cols; j++) {
+                                if (isR(i, j)) {
+                                    // Occasionally skip characters for shimmer effect
+                                    if (Math.random() < pulseIntensity) {
+                                        output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                                    } else {
+                                        output += ' ';
+                                    }
+                                } else {
+                                    output += ' ';
+                                }
+                            }
+                            output += '\n';
+                        }
+                        container.textContent = output;
+                        
+                        animFrame++;
+                        if (animFrame > 150) { // Longer animation
+                            clearInterval(animInterval);
+                        }
+                    }, 100); // Slower for more dramatic effect
+                }
+            }, 40); // Smoother updates
+        }
+    }
+    
+    function triggerExitCube(frame) {
+        console.log('🔲 EXIT CUBE');
+        // Keep terminal active - don't disable it
+        
+        // Draw box line by line, then extrude
+        const lines = [
+            '┌─────────┐',
+            '│         │',
+            '│         │',
+            '│         │',
+            '└─────────┘'
+        ];
+        
+        // Create box element without clearing frame (preserve input)
+        const boxEl = document.createElement('div');
+        boxEl.id = 'exitBox';
+        boxEl.style.cssText = 'font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6; text-align: center; margin-top: 35%; color: #0f0; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 50;';
+        frame.appendChild(boxEl);
+        
+        let lineIdx = 0;
+        const lineInterval = setInterval(() => {
+            if (lineIdx < lines.length) {
+                boxEl.textContent += lines[lineIdx] + '\n';
+                lineIdx++;
+            } else {
+                clearInterval(lineInterval);
+                // Extrude effect
+                setTimeout(() => {
+                    extrudeCube(boxEl);
+                }, 500);
+            }
+        }, 300);
+    }
+    
+    function extrudeCube(boxEl) {
+        const cubeFrames = [
+            `    ┌─────────┐
+   /         /│
+  /         / │
+ /         /  │
+┌─────────┐   │
+│         │   │
+│         │   /
+│         │  /
+│         │ /
+└─────────┘/`,
+            `      ┌─────────┐
+     /         /│
+    /         / │
+   /         /  │
+  ┌─────────┐   │
+ /│         │   │
+/ │         │   /
+  │         │  /
+  │         │ /
+  └─────────┘/`
+        ];
+        
+        let frame = 0;
+        setInterval(() => {
+            boxEl.textContent = cubeFrames[frame % cubeFrames.length];
+            frame++;
+        }, 400);
+    }
+    
+    function triggerLeaveSequence(frame) {
+        console.log('🏠 LEAVE → LEAVES → GIR.mp3');
+        // Keep terminal active - don't disable it
+        
+        // Draw classic house made of the word "LEAVES" - using full display
+        const house = `
+                                                 LEAVES
+                                              LEAVES LEAVES
+                                           LEAVES       LEAVES
+                                        LEAVES             LEAVES
+                                     LEAVES                   LEAVES
+                                  LEAVES                         LEAVES
+          LEAVES                LEAVES                               LEAVES
+          LEAVES             LEAVES                                     LEAVES
+          LEAVES LEAVES   LEAVES                                           LEAVES
+          LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES
+          LEAVES                                                                     LEAVES
+          LEAVES                                                                     LEAVES
+          LEAVES    LEAVES LEAVES LEAVES LEAVES             LEAVES LEAVES LEAVES     LEAVES
+          LEAVES    LEAVES                LEAVES             LEAVES       LEAVES     LEAVES
+          LEAVES    LEAVES                LEAVES             LEAVES       LEAVES     LEAVES
+          LEAVES    LEAVES       LEAVES    LEAVES             LEAVES LEAVES LEAVES     LEAVES
+          LEAVES    LEAVES                LEAVES             LEAVES       LEAVES     LEAVES
+          LEAVES    LEAVES                LEAVES             LEAVES       LEAVES     LEAVES
+          LEAVES    LEAVES LEAVES LEAVES LEAVES             LEAVES LEAVES LEAVES     LEAVES
+          LEAVES                                                                     LEAVES
+          LEAVES                                                                     LEAVES
+          LEAVES                      LEAVES LEAVES LEAVES                           LEAVES
+          LEAVES                      LEAVES       LEAVES                           LEAVES
+          LEAVES                      LEAVES       LEAVES                           LEAVES
+          LEAVES                      LEAVES       LEAVES                           LEAVES
+          LEAVES                      LEAVES       LEAVES                           LEAVES
+          LEAVES                      LEAVES       LEAVES                           LEAVES
+          LEAVES                      LEAVES LEAVES LEAVES                           LEAVES
+          LEAVES                                                                     LEAVES
+          LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES LEAVES
+`;
+        
+        const houseDiv = document.createElement('div');
+        houseDiv.id = 'leavesHouse';
+        houseDiv.style.cssText = 'font-family: "Courier New", monospace; white-space: pre; text-align: left; font-size: 13px; margin-top: 5%; margin-left: 5%; color: #0f0; line-height: 1.6; position: absolute; top: 0; left: 0; z-index: 50; pointer-events: none;';
+        houseDiv.textContent = house;
+        frame.appendChild(houseDiv);
+        
+        // After 2s, glitch all LEAVES in the house to GIR.mp3
+        setTimeout(() => {
+            const words = house.match(/LEAVES/g) || [];
+            let glitchedHouse = house;
+            const glitchDuration = 2000;
+            const glitchStart = Date.now();
+            
+            const glitchInterval = setInterval(() => {
+                const elapsed = Date.now() - glitchStart;
+                const progress = elapsed / glitchDuration;
+                
+                if (progress >= 1) {
+                    clearInterval(glitchInterval);
+                    // All LEAVES become GIR.mp3
+                    glitchedHouse = house.replace(/LEAVES/g, 'GIR.mp3');
+                    houseDiv.textContent = glitchedHouse;
+                } else {
+                    // Gradually glitch LEAVES to GIR.mp3
+                    let tempHouse = house;
+                    const totalWords = words.length;
+                    const wordsToGlitch = Math.floor(totalWords * progress);
+                    
+                    let replacedCount = 0;
+                    tempHouse = tempHouse.replace(/LEAVES/g, (match) => {
+                        if (replacedCount < wordsToGlitch) {
+                            replacedCount++;
+                            // Mix characters between LEAVES and GIR.mp3
+                            const chars = 'GIR.mp3';
+                            let mixed = '';
+                            for (let i = 0; i < match.length; i++) {
+                                if (Math.random() < progress) {
+                                    mixed += chars[i] || chars[chars.length - 1];
+                                } else {
+                                    mixed += match[i];
+                                }
+                            }
+                            return mixed.padEnd(7);
+                        }
+                        return match;
+                    });
+                    
+                    houseDiv.textContent = tempHouse;
+                }
+            }, 50);
+        }, 2000);
+    }
+    
+    function glitchText(frame, from, to) {
+        const glitchDuration = 1000;
+        const glitchStart = Date.now();
+        const displayEl = frame.querySelector('div');
+        
+        const glitchInterval = setInterval(() => {
+            const elapsed = Date.now() - glitchStart;
+            const progress = elapsed / glitchDuration;
+            
+            if (progress >= 1) {
+                clearInterval(glitchInterval);
+                displayEl.textContent = to;
+            } else {
+                // Mix characters
+                const mixed = to.split('').map((toChar, i) => {
+                    if (Math.random() < progress) {
+                        return toChar;
+                    } else if (from[i]) {
+                        return from[i];
+                    } else {
+                        return String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                    }
+                }).join('');
+                displayEl.textContent = mixed;
+            }
+        }, 50);
+    }
+    
+    function triggerVictory(frame) {
+        console.log('🎉 VICTORY!');
+        // Keep terminal active - don't disable it
+        
+        // Create victory message without clearing frame (preserve input)
+        const victoryDiv = document.createElement('div');
+        victoryDiv.style.cssText = 'text-align: center; margin-top: 35%; color: #0f0; font-size: 13px; line-height: 1.6; font-family: "Courier New", monospace; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 50; pointer-events: none;';
+        victoryDiv.innerHTML = `★ VICTORY ★<br><br>You found it!<br>Welcome to madness.loom`;
+        frame.appendChild(victoryDiv);
+    }
+    
     function triggerCelliBackspaceReaction() {
         if (celliBackspaceSequenceStarted || burstAnimStarted) return;
 
@@ -1377,6 +2642,9 @@
             const keepVoxel = (gridX === 4 && ((gridY === 0) || (gridY >= 1 && gridY <= 4 && gridCol === 2)));
             
             if (!keepVoxel) {
+                // Store in stack for later restoration BEFORE marking as glitched
+                glitchedVoxelsStack.push(voxel);
+                
                 // Mark as glitched immediately to prevent updates
                 data.glitched = true;
                 
@@ -1489,46 +2757,49 @@
             
             // Hide triangle gradient - it makes things look off-center
             triMesh.visible = false;
-        } else if (phase === 'transition') {
-            const transProgress = (t - introCfg.triangleEnd) / (introCfg.transitionEnd - introCfg.triangleEnd);
-            const morphProgress = THREE.MathUtils.clamp((transProgress - 0.5) / 0.5, 0, 1);
-            bloomPass.strength = THREE.MathUtils.lerp(0.3, 0.42, morphProgress);
-            afterimagePass.uniforms.damp.value = THREE.MathUtils.lerp(0.92, 0.96, transProgress);
-            filmPass.uniforms.noise.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
-            filmPass.uniforms.scanAmp.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
-            triMesh.visible = false;
-            triMesh.material.opacity = 0;
+        } else if (phase === 'transition') {
+            const transProgress = (t - introCfg.triangleEnd) / (introCfg.transitionEnd - introCfg.triangleEnd);
+            bloomPass.strength = 0.7; // Keep bloom consistent
+            afterimagePass.uniforms.damp.value = THREE.MathUtils.lerp(0.92, 0.96, transProgress);
+            filmPass.uniforms.noise.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
+            filmPass.uniforms.scanAmp.value = THREE.MathUtils.lerp(0.015, 0.03, transProgress);
+            triMesh.visible = false;
+            triMesh.material.opacity = 0;
         } else if (phase === 'normal') {
             const normalT = t - introCfg.transitionEnd;
+            const normalDuration = introCfg.normalEnd - introCfg.transitionEnd;
             const convergeDuration = 2.2;
-            const repelDuration = 1.6;
-
-            let triangleOpacity = 0;
-            let bloomStrength = 0.7;
+            const pulseDuration = 3.0;
+            const totalAnimDuration = convergeDuration + pulseDuration;
 
             if (normalT < convergeDuration) {
+                // Phase 1: Converge - increase bloom
                 const convergeProgress = THREE.MathUtils.clamp(normalT / convergeDuration, 0, 1);
                 const convergeEased = convergeProgress * convergeProgress * (3 - 2 * convergeProgress);
-                bloomStrength = THREE.MathUtils.lerp(0.42, 0.9, convergeEased);
+                bloomPass.strength = THREE.MathUtils.lerp(0.7, 0.9, convergeEased);
                 triMesh.visible = false;
-                triangleOpacity = 0;
-            } else if (normalT < convergeDuration + repelDuration) {
-                const repelProgress = THREE.MathUtils.clamp((normalT - convergeDuration) / repelDuration, 0, 1);
-                const repelEased = 1 - Math.pow(1 - repelProgress, 3);
-                bloomStrength = THREE.MathUtils.lerp(0.9, 0.72, repelEased);
-                triMesh.visible = true;
-                triangleOpacity = THREE.MathUtils.lerp(0, 0.7, repelEased);
+            } else if (normalT < totalAnimDuration) {
+                // Phase 2: Single pulse - bloom follows expansion
+                const pulseT = normalT - convergeDuration;
+                const pulseProgress = pulseT / pulseDuration;
+                const pulseCycle = Math.sin(pulseProgress * Math.PI);
+                
+                bloomPass.strength = THREE.MathUtils.lerp(0.9, 0.72, pulseCycle);
+                triMesh.visible = pulseCycle > 0.3; // Show triangle during expansion
+                triMesh.material.opacity = THREE.MathUtils.clamp(pulseCycle * 1.5, 0, 0.7);
             } else {
-                triMesh.visible = true;
-                triangleOpacity = 0.7;
-                bloomStrength = 0.72;
+                // Phase 3: Brief hold, prepare for venn transition
+                const holdT = normalT - totalAnimDuration;
+                const holdDuration = normalDuration - totalAnimDuration;
+                const holdProgress = holdT / holdDuration;
+                
+                bloomPass.strength = THREE.MathUtils.lerp(0.9, 0.85, holdProgress);
+                triMesh.visible = false;
             }
 
-            bloomPass.strength = bloomStrength;
             afterimagePass.uniforms.damp.value = 0.96;
             filmPass.uniforms.noise.value = 0.03;
             filmPass.uniforms.scanAmp.value = 0.03;
-            triMesh.material.opacity = triangleOpacity;
         } else if (phase === 'venn') {
             // Settle into clear venn diagram
             const vennProgress = (t - introCfg.normalEnd) / (introCfg.vennEnd - introCfg.normalEnd);
@@ -1556,11 +2827,6 @@
                 quoteEl.classList.add('glitch');
                 glitchStarted = true;
                 quoteShown = true;
-            }
-
-            if (collapseProgress > 0.45 && !quoteLookSwapped) {
-                glitchSwapQuote(quoteStates.look, { duration: 1200, onComplete: () => quoteEl.classList.remove('quote--loom') });
-                quoteLookSwapped = true;
             }
 
             // Increase to medium glitch
@@ -1648,15 +2914,15 @@
                     { freq: 523.25, time: 0.45, duration: 0.5 }     // C5 (held)
                 ];
                 
-                melody.forEach(note => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(note.freq, now + note.time);
-                    
-                    // Envelope
-                    gain.gain.setValueAtTime(0, now + note.time);
+                melody.forEach((note, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(note.freq, now + note.time);
+                    
+                    // Envelope
+                    gain.gain.setValueAtTime(0, now + note.time);
                     gain.gain.linearRampToValueAtTime(0.12, now + note.time + 0.02);
                     gain.gain.linearRampToValueAtTime(0.08, now + note.time + 0.1);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + note.time + note.duration);
@@ -1665,10 +2931,15 @@
                     gain.connect(audioCtx.destination);
                     osc.start(now + note.time);
                     osc.stop(now + note.time + note.duration);
-                });
-                
-                chimePlayed = true;
-            }
+                });
+                
+                // Play startup bass after chime completes
+                setTimeout(() => {
+                    playStartupBass();
+                }, 1200);
+                
+                chimePlayed = true;
+            }
             
             // Hide Loomworks text near end
             const loomProgress = (t - introCfg.blackoutEnd) / (introCfg.loomworksEnd - introCfg.blackoutEnd);
@@ -1681,6 +2952,11 @@
             afterimagePass.uniforms.damp.value = 0.85;
             filmPass.uniforms.noise.value = 0.008;
             filmPass.uniforms.scanAmp.value = 0.003;
+            
+            // Hide skip button when CELLI starts
+            if (!celliStarted) {
+                skipBtn.classList.add('hidden');
+            }
             triMesh.visible = false;
             
             if (!celliStarted) {
@@ -1714,6 +2990,9 @@
                 if (doorwayProgress > 0.15) {
                     document.getElementById('doorway').classList.add('open');
                     doorwayOpened = true;
+                    
+                    // Trigger bow animation when doorway opens
+                    animateSkipToBow();
                 }
             }
         }
@@ -1727,8 +3006,8 @@
             
             // Keep glow visible throughout roll
             bloomPass.strength = 0.4;
-            
-            for (let i = 0; i < 3; i++) {
+
+        for (let i = 0; i < 3; i++) {
                 const targetX = (i - 1) * 0.35;
                 const startX = targetX - 2.0; // Start off-screen left
                 const x = THREE.MathUtils.lerp(startX, targetX, eased);
@@ -1974,10 +3253,10 @@
         } else if (phase === 'normal') {
             const normalT = t - introCfg.transitionEnd;
             const convergeDuration = 2.2;
-            const repelDuration = 1.6;
-            const overlapDist = 0.02;
+            const pulseDuration = 3.0; // One expand/contract cycle
             const transitionEndDist = motionCfg.maxDist * 0.5;
-            const postRepelDist = motionCfg.maxDist * 0.72;
+            const closeConvergeDist = 0.02; // Very close convergence
+            const triangleExpandDist = motionCfg.maxDist * 0.65; // Expand to triangle
 
             const centerY = 0;
             const triangleAngles = [
@@ -1990,45 +3269,46 @@
             const triangleMapping = [1, 0, 2];
 
             let currentDist = transitionEndDist;
-            let scale = motionCfg.minScale;
+            let scale = 1.0;
             let pulseFactorValue = 0.5;
 
             if (normalT < convergeDuration) {
+                // Phase 1: Converge close
                 const convergeProgress = THREE.MathUtils.clamp(normalT / convergeDuration, 0, 1);
                 const convergeEased = convergeProgress * convergeProgress * (3 - 2 * convergeProgress);
-                currentDist = THREE.MathUtils.lerp(transitionEndDist, overlapDist, convergeEased);
+                currentDist = THREE.MathUtils.lerp(transitionEndDist, closeConvergeDist, convergeEased);
                 scale = THREE.MathUtils.lerp(1.0, 0.82, convergeEased);
                 pulseFactorValue = THREE.MathUtils.lerp(0.5, 0.95, convergeEased);
-            } else if (normalT < convergeDuration + repelDuration) {
-                const repelProgress = THREE.MathUtils.clamp((normalT - convergeDuration) / repelDuration, 0, 1);
-                const repelEased = 1 - Math.pow(1 - repelProgress, 3);
-                currentDist = THREE.MathUtils.lerp(overlapDist, postRepelDist, repelEased);
-                scale = THREE.MathUtils.lerp(0.82, 0.94, repelEased);
-                pulseFactorValue = THREE.MathUtils.lerp(0.95, 0.6, repelEased);
+            } else if (normalT < convergeDuration + pulseDuration) {
+                // Phase 2: Single expand/contract pulse
+                const pulseT = normalT - convergeDuration;
+                const pulseProgress = pulseT / pulseDuration;
+                
+                // Use sine wave for smooth expand/contract (0->1->0)
+                const pulseCycle = Math.sin(pulseProgress * Math.PI);
+                
+                currentDist = THREE.MathUtils.lerp(closeConvergeDist, triangleExpandDist, pulseCycle);
+                scale = THREE.MathUtils.lerp(0.82, 1.0, pulseCycle);
+                pulseFactorValue = THREE.MathUtils.lerp(0.95, 0.6, pulseCycle);
             } else {
-                const pulseTime = normalT - (convergeDuration + repelDuration);
-                const basePulse = 0.5 + 0.5 * Math.sin(pulseTime * motionCfg.speed);
-                const blendDuration = 1.4;
-                const blend = Math.min(pulseTime / blendDuration, 1);
-                const targetDist = motionCfg.maxDist * basePulse;
-                currentDist = THREE.MathUtils.lerp(postRepelDist, targetDist, blend);
-                const targetScale = THREE.MathUtils.lerp(motionCfg.minScale, 1.0, basePulse);
-                scale = THREE.MathUtils.lerp(0.94, targetScale, blend);
-                pulseFactorValue = basePulse;
+                // Phase 3: Hold at converged position before transitioning to venn
+                currentDist = closeConvergeDist;
+                scale = 0.82;
+                pulseFactorValue = 0.95;
             }
 
             for (let i = 0; i < 3; i++) {
                 const angleIndex = triangleMapping[i];
                 const angle = triangleAngles[angleIndex] + rotation;
-                const p = new THREE.Vector2(
-                    Math.cos(angle) * currentDist,
+            const p = new THREE.Vector2(
+                Math.cos(angle) * currentDist,
                     Math.sin(angle) * currentDist + centerY
-                );
-                spheres[i].position.set(p.x, p.y, -i * 0.002);
+            );
+            spheres[i].position.set(p.x, p.y, -i * 0.002);
                 spheres[i].rotation.z = 0;
-                spheres[i].scale.set(scale, scale, scale);
-                triMat.uniforms.points.value[i].copy(p);
-            }
+            spheres[i].scale.set(scale, scale, scale);
+            triMat.uniforms.points.value[i].copy(p);
+        }
             blackHole.visible = true;
             blackHole.material.uniforms.pulseFactor.value = pulseFactorValue;
 
@@ -2085,7 +3365,6 @@
                 applyQuoteState(quoteStates.initial, { immediate: true });
                 quoteEl.classList.remove('scrambling', 'glitch', 'glitchMedium', 'glitchIntense');
                 document.getElementById('quote').classList.add('visible');
-                quoteLookSwapped = false;
                 quoteDespairShown = false;
                 quoteShown = true;
             }
@@ -2141,11 +3420,6 @@
             if (collapseProgress > 0.3 && !glitchStarted) {
                 document.getElementById('quote').classList.add('glitch');
                 glitchStarted = true;
-            }
-            
-            if (collapseProgress > 0.45 && !quoteLookSwapped) {
-                glitchSwapQuote(quoteStates.look, { duration: 1200, onComplete: () => quoteEl.classList.remove('quote--loom') });
-                quoteLookSwapped = true;
             }
             
         } else if (phase === 'glitch' || phase === 'blackout' || phase === 'loomworks' || phase === 'celli') {
@@ -2241,7 +3515,6 @@
               voxel.scale.set(celliScale, celliScale, celliScale);
           });
       }
-      requestAnimationFrame(captureLookAnchorPosition);
     }
     window.addEventListener('resize', onResize);
     onResize();
@@ -2605,6 +3878,46 @@
         osc2.stop(now + duration);
     }
     
+    // Startup bass sound (Simple warm chord - NO REVERB to prevent oscillation)
+    function playStartupBass() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        
+        // Master output - simple, clean
+        const masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.4;
+        masterGain.connect(audioCtx.destination);
+        
+        // Simple warm chord - C major
+        const chordNotes = [
+            { freq: 130.81, vol: 0.10 },  // C3
+            { freq: 164.81, vol: 0.08 },  // E3
+            { freq: 196.00, vol: 0.07 },  // G3
+            { freq: 65.41, vol: 0.09 },   // C2 (bass)
+        ];
+        
+        chordNotes.forEach((note, i) => {
+            const osc = audioCtx.createOscillator();
+            const oscGain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = note.freq; // Fixed frequency, no modulation
+            
+            // Simple envelope
+            const delay = i * 0.08;
+            oscGain.gain.setValueAtTime(0, now + delay);
+            oscGain.gain.linearRampToValueAtTime(note.vol, now + delay + 0.15);
+            oscGain.gain.setValueAtTime(note.vol * 0.9, now + delay + 0.6);
+            oscGain.gain.linearRampToValueAtTime(0, now + delay + 1.5);
+            
+            osc.connect(oscGain);
+            oscGain.connect(masterGain);
+            
+            osc.start(now + delay);
+            osc.stop(now + delay + 1.6);
+        });
+    }
+    
     // Chiptune drum player
     function playChiptuneDrum(volume = 0.12, reverbAmount = 0.3, glitchLevel = 0, reverbNode = null) {
         if (!audioCtx) return;
@@ -2768,7 +4081,8 @@
                 burstTimeout = null;
             }
 
-            triggerCelliBackspaceReaction();
+            // Restore one letter with fritz effect
+            restoreOneLetter();
             return true;
         }
 
@@ -2782,9 +4096,8 @@
                 return;
             }
 
-            if (tEntered) return;
-
-            if (e.key.toLowerCase() === 't') {
+            // T input - starts burst sequence
+            if (!tEntered && e.key.toLowerCase() === 't') {
                 e.preventDefault();
                 tEntered = true;
                 inputText += 'T';
@@ -2802,6 +4115,49 @@
                 burstTimeout = setTimeout(() => {
                     triggerBurstToStars();
                 }, 500);
+                return;
+            }
+            
+            // E, N, D inputs - only after STAR is fully cleared and yellow transformation complete
+            if (inputText === '=' && allYellowTransformed) {
+                const key = e.key.toUpperCase();
+                
+                console.log('END input detected:', key, 'endSequence:', endSequence, 'allYellowTransformed:', allYellowTransformed);
+                
+                // E must be first
+                if (endSequence === '' && key === 'E') {
+                    e.preventDefault();
+                    endSequence = 'E';
+                    transformToMagentaRed();
+                    promptTextEl.textContent = '=E';
+                    if (promptEl) promptEl.setAttribute('data-text', '=E_');
+                    console.log('Transformed to MAGENTA');
+                    return;
+                }
+                
+                // N must be second (after E)
+                if (endSequence === 'E' && key === 'N') {
+                    e.preventDefault();
+                    endSequence = 'EN';
+                    transformToCyanBlue();
+                    promptTextEl.textContent = '=EN';
+                    if (promptEl) promptEl.setAttribute('data-text', '=EN_');
+                    console.log('Transformed to CYAN');
+                    return;
+                }
+                
+                // D must be third (after EN)
+                if (endSequence === 'EN' && key === 'D') {
+                    e.preventDefault();
+                    endSequence = 'END';
+                    transformToGreenAndSquare();
+                    promptTextEl.textContent = '=END';
+                    if (promptEl) promptEl.setAttribute('data-text', '=END_');
+                    console.log('Transformed to GREEN, starting snap animation');
+                    return;
+                }
+            } else if (inputText === '=') {
+                console.log('Input is =, but allYellowTransformed is:', allYellowTransformed);
             }
         });
         
@@ -2825,12 +4181,8 @@
                     return;
                 }
 
-                if (tEntered) {
-                    e.target.value = '';
-                    return;
-                }
-
-                if (value.includes('T')) {
+                // T input for burst sequence
+                if (!tEntered && value.includes('T')) {
                     e.preventDefault();
                     tEntered = true;
                     inputText += 'T';
@@ -2851,16 +4203,48 @@
                     }, 500);
 
                     hiddenInput.blur();
-                } else {
-                    e.target.value = '';
+                    return;
                 }
+                
+                // E, N, D inputs after STAR cleared and yellow transformation
+                if (inputText === '=' && allYellowTransformed) {
+                    // E must be first
+                    if (endSequence === '' && value.includes('E')) {
+                        e.preventDefault();
+                        endSequence = 'E';
+                        transformToMagentaRed();
+                        promptTextEl.textContent = '=E';
+                        if (promptEl) promptEl.setAttribute('data-text', '=E_');
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    // N must be second
+                    if (endSequence === 'E' && value.includes('N')) {
+                        e.preventDefault();
+                        endSequence = 'EN';
+                        transformToCyanBlue();
+                        promptTextEl.textContent = '=EN';
+                        if (promptEl) promptEl.setAttribute('data-text', '=EN_');
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    // D must be third
+                    if (endSequence === 'EN' && value.includes('D')) {
+                        e.preventDefault();
+                        endSequence = 'END';
+                        transformToGreenAndSquare();
+                        promptTextEl.textContent = '=END';
+                        if (promptEl) promptEl.setAttribute('data-text', '=END_');
+                        e.target.value = '';
+                        return;
+                    }
+                }
+                
+                // Clear any other input
+                e.target.value = '';
             });
-        }
-
-        if (!quoteLookWrap.classList.contains('quote__lookWrap--hidden')) {
-            requestAnimationFrame(captureLookAnchorPosition);
-        } else {
-            updateLoomworksOffset();
         }
     }
     
@@ -3156,11 +4540,44 @@
 
     // --- Play button wiring -------------------------------------------------
     const playOverlay = document.getElementById('play');
+    const playBtn = document.getElementById('playBtn');
+    const skipBtn = document.getElementById('skipBtn');
+    
     playBtn.addEventListener('click', ()=>{
       running = true; clock.getDelta();
       playOverlay.classList.add('hidden');
+      skipBtn.classList.remove('hidden'); // Show skip button
       clearToast();
       frame();
+    });
+    
+    // --- Skip button logic ---------------------------------------------------
+    skipBtn.addEventListener('click', () => {
+      if (!running) return;
+      
+      // Jump to CELLI phase
+      totalTime = introCfg.celliEnd - 6.0; // Start 6 seconds before celli ends (during trickle/chime)
+      
+      // Hide all prior elements
+      quoteEl.style.visibility = 'hidden';
+      quoteEl.style.opacity = '0';
+      loomworksEl.style.display = 'none';
+      triMesh.visible = false;
+      blackHole.visible = false;
+      spheres.forEach(s => s.visible = false);
+      
+      // Setup CELLI
+      if (!celliStarted) {
+        celliStarted = true;
+        celliStartTime = totalTime;
+      }
+      
+      // Don't hide skip button - it will transform into a bow later
+      
+      // Play startup bass note
+      setTimeout(() => {
+        playStartupBass();
+      }, 500);
     });
 
     // --- Bring-up Self‑Tests & Toast ---------------------------------------
@@ -3173,7 +4590,3 @@
   </script>
 </body>
 </html>
-
-
-
-
