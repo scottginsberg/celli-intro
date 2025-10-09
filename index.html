@@ -6,7 +6,7 @@
   <title>Tri‑Trail Evolved • three.js</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto+Mono:wght@100;300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto+Mono:wght@100;300&family=VT323&display=swap" rel="stylesheet">
   <style>
     :root { --bg: #000; --fg: #e6e6e6; --accent:#8ab4ff; }
     html, body { margin:0; height:100%; background:#000; overflow:hidden; }
@@ -74,11 +74,12 @@
     .doorway.open .prompt-container { opacity:1; pointer-events:auto; cursor:text; }
     .prompt {
       position: relative;
-      font-family: 'Press Start 2P', 'Roboto Mono', ui-monospace, monospace;
-      font-size: clamp(12px, 3.5vw, 36px);
+      font-family: 'VT323', 'Press Start 2P', 'Roboto Mono', ui-monospace, monospace;
+      font-size: clamp(13px, 3.1vw, 34px);
       font-weight:400;
       color:#000;
-      letter-spacing:0.08em;
+      letter-spacing:0.22em;
+      text-transform:uppercase;
       z-index: 2;
       white-space: nowrap;
     }
@@ -87,22 +88,22 @@
       content: attr(data-text);
       position: absolute;
       left: 0;
-      top: 130%;
+      top: 148%;
       width: 100%;
-      font-family: 'Press Start 2P', 'Roboto Mono', ui-monospace, monospace;
-      font-size: clamp(12px, 3.5vw, 36px);
+      font-family: 'VT323', 'Press Start 2P', 'Roboto Mono', ui-monospace, monospace;
+      font-size: clamp(13px, 3.1vw, 34px);
       font-weight: 400;
-      color: rgba(0, 0, 0, 0.95);
-      letter-spacing: 0.08em;
-      transform: scaleY(-1.4) perspective(150px) rotateX(68deg);
-      transform-origin: top center;
-      opacity: 0.9;
-      filter: blur(1px);
+      color: rgba(0, 0, 0, 0.92);
+      letter-spacing: 0.22em;
+      transform-origin: top left;
+      transform: translate(18px, -4px) scaleY(-1.05) skewX(-18deg) scaleX(1.2);
+      opacity: 0.38;
+      filter: blur(1.15px);
       z-index: 1;
       pointer-events: none;
       white-space: nowrap;
-      mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 35%, rgba(0,0,0,0) 100%);
-      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 35%, rgba(0,0,0,0) 100%);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0) 100%);
     }
     .cursor { animation:blink 1s step-end infinite; }
     @keyframes blink {
@@ -276,6 +277,21 @@
     .r-hint .r-line { display:block; line-height:1.4; }
     .r-hint .r-char { display:inline-block; width:1ch; transition: transform 0.85s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.85s ease, filter 0.85s ease; }
     .r-hint .r-char.falling { transform: translateY(26px); opacity:0; filter: blur(2px); }
+    #matrixPleaOverlay { position:absolute; bottom:22px; left:32px; font-family:'VT323', 'Courier New', monospace; font-size:18px; letter-spacing:0.28em; text-transform:uppercase; color:#0f0; text-shadow:0 0 6px rgba(0,255,160,0.7); opacity:0; transform:translateY(8px); pointer-events:none; transition: opacity 0.5s ease, transform 0.45s ease; }
+    #matrixPleaOverlay.visible { opacity:0.92; transform:translateY(0); }
+    #matrixPleaOverlay.glitch { animation: matrixPleaGlitch 0.35s steps(2) infinite; }
+    .matrix-plead { text-shadow:0 0 3px rgba(0,255,160,0.5), 0 0 8px rgba(0,255,140,0.35); }
+    .matrix-plead-flash { animation: matrixPleaFlash 0.28s ease-out; }
+    @keyframes matrixPleaGlitch {
+      0%, 100% { transform:translateY(0); text-shadow:0 0 6px rgba(0,255,160,0.7); }
+      40% { transform:translate(-2px, -1px) skewX(-4deg); text-shadow:0 0 10px rgba(0,255,200,0.9), -2px 0 #00ffd5; }
+      75% { transform:translate(2px, 1px) skewX(3deg); text-shadow:0 0 10px rgba(170,255,120,0.85), 2px 0 #b3ff00; }
+    }
+    @keyframes matrixPleaFlash {
+      0% { filter:brightness(1); text-shadow:0 0 3px rgba(0,255,160,0.4); }
+      45% { filter:brightness(1.35); text-shadow:0 0 14px rgba(0,255,200,0.85); }
+      100% { filter:brightness(1); text-shadow:0 0 4px rgba(0,255,140,0.45); }
+    }
   </style>
 </head>
 <body>
@@ -759,6 +775,9 @@
     let landingSounds = [false, false, false]; // Track if shape has landed
     let lastThunkTime = [0, 0, 0]; // Track last thunk time for each shape
     
+    let speechRActive = false;
+    let speechRTimeout = null;
+    let speechRVoice = null;
     let quoteShown = false;
     let quoteDespairShown = false;
     let glitchStarted = false;
@@ -2093,7 +2112,7 @@
  23   <span class="visicell-note-line visicell-note-line--1">&gt;:(</span>
  24   <span class="visicell-note-line visicell-note-line--2">This isn't Stanley Parable. Don't try that again.</span>
                 </div>
-                <div id="visicellinput" style="position: absolute; bottom: 24px; right: 36px; left: auto; top: auto; border-top: 1px solid #0f0; padding-top: 10px; opacity: 0; animation: fadeInVisi 0.3s ease forwards 1s; cursor: text; font-family: 'Courier New', monospace; font-size: 13px; z-index: 100; pointer-events: auto; text-align: right;">
+                <div id="visicellinput" style="position: absolute; bottom: 24px; left: 36px; right: auto; top: auto; border-top: 1px solid #0f0; padding-top: 10px; opacity: 0; animation: fadeInVisi 0.3s ease forwards 1s; cursor: text; font-family: 'VT323', 'Courier New', monospace; font-size: 16px; letter-spacing: 0.18em; z-index: 100; pointer-events: auto; text-align: left; text-transform: uppercase;">
                     <span id="visicellprompt">ENTE<span style="animation: blink 1s step-end infinite;">_</span></span>
                 </div>
             </div>
@@ -2441,20 +2460,18 @@
             }
             
             const asciiR = `
-RRRRRRRRRRRRRRR
-RRRRRRRRRRRRRRR
-RRRR       RRRR
-RRRR       RRRR
-RRRR       RRRR
-RRRR       RRRR
-RRRRRRRRRRRRRRR
-RRRRRRRRRRRRRRR
-RRRRRRRRRRR    
-RRRR    RRRR   
-RRRR      RRRR 
-RRRR        RRRR
-RRRR          RRRR
-RRRR            RRRR`;
+RRRRRRRRRRRR
+RRRRRRRRRRRR
+RRRR     RRR
+RRRR     RRR
+RRRR     RRR
+RRRRRRRRRRR
+RRRRRRRRRR
+RRRR  RRRR
+RRRR   RRRR
+RRRR    RRRR
+RRRR     RRR
+RRRR      RRR`;
             
             // Type out character by character with polished timing
             let charIndex = 0;
@@ -2499,43 +2516,103 @@ RRRR            RRRR`;
     }
     
     function playTextToSpeechR() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Synthesize "are" sound using oscillators
-        function speakR() {
+        if (speechRActive) return;
+        speechRActive = true;
+
+        const hasSpeechSynthesis = typeof window !== 'undefined' && 'speechSynthesis' in window;
+        const phrases = [
+            'R. Just the letter R.',
+            'It is literally one key. Press R.',
+            'VisiCell is waiting on a single R.',
+            'Please deposit a solitary R. Thank you.'
+        ];
+        let phraseIndex = 0;
+
+        if (hasSpeechSynthesis && !speechRVoice) {
+            const assignVoice = () => {
+                const voices = window.speechSynthesis.getVoices();
+                if (!voices || !voices.length) return;
+                const preferred = ['Google UK English Female', 'Google US English', 'Google UK English Male', 'Microsoft Aria Online', 'Microsoft Jenny Online'];
+                for (const name of preferred) {
+                    const match = voices.find(v => v.name && v.name.includes(name));
+                    if (match) {
+                        speechRVoice = match;
+                        break;
+                    }
+                }
+                if (!speechRVoice) {
+                    speechRVoice = voices.find(v => /en/i.test(v.lang || '')) || voices[0] || null;
+                }
+                if (speechRVoice && window.speechSynthesis.removeEventListener) {
+                    window.speechSynthesis.removeEventListener('voiceschanged', assignVoice);
+                }
+            };
+            assignVoice();
+            if (!speechRVoice && window.speechSynthesis.addEventListener) {
+                window.speechSynthesis.addEventListener('voiceschanged', assignVoice);
+            }
+        }
+
+        const speakFallback = () => {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const now = audioCtx.currentTime;
-            const duration = 0.6;
-            
-            // "Are" has an "ah" vowel transitioning to "r"
+            const duration = 0.58;
             const vowelOsc = audioCtx.createOscillator();
             const vowelGain = audioCtx.createGain();
             const vowelFilter = audioCtx.createBiquadFilter();
-            
-            // Vowel formants for "ah" -> "r"
+
             vowelOsc.type = 'sawtooth';
-            vowelOsc.frequency.setValueAtTime(120, now); // Base pitch
-            
+            vowelOsc.frequency.setValueAtTime(126, now);
+
             vowelFilter.type = 'bandpass';
-            vowelFilter.frequency.setValueAtTime(700, now); // "ah" formant
-            vowelFilter.frequency.linearRampToValueAtTime(500, now + duration); // transition to "r"
-            vowelFilter.Q.value = 5;
-            
+            vowelFilter.frequency.setValueAtTime(720, now);
+            vowelFilter.frequency.linearRampToValueAtTime(510, now + duration);
+            vowelFilter.Q.value = 5.5;
+
             vowelGain.gain.setValueAtTime(0, now);
-            vowelGain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+            vowelGain.gain.linearRampToValueAtTime(0.18, now + 0.08);
             vowelGain.gain.linearRampToValueAtTime(0.12, now + duration - 0.1);
-            vowelGain.gain.linearRampToValueAtTime(0, now + duration);
-            
+            vowelGain.gain.linearRampToValueAtTime(0.001, now + duration + 0.05);
+
             vowelOsc.connect(vowelFilter);
             vowelFilter.connect(vowelGain);
             vowelGain.connect(audioCtx.destination);
-            
+
             vowelOsc.start(now);
             vowelOsc.stop(now + duration);
-        }
-        
-        // Play immediately and loop every 2 seconds
-        speakR();
-        setInterval(speakR, 2000);
+        };
+
+        const speak = () => {
+            if (!speechRActive) return;
+            if (hasSpeechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(phrases[phraseIndex % phrases.length]);
+                utterance.rate = 0.92;
+                utterance.pitch = 1.05;
+                utterance.volume = 0.94;
+                if (speechRVoice) {
+                    utterance.voice = speechRVoice;
+                }
+                phraseIndex++;
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+            } else {
+                speakFallback();
+            }
+        };
+
+        const scheduleNext = () => {
+            if (!speechRActive) return;
+            speechRTimeout = setTimeout(() => {
+                speak();
+                scheduleNext();
+            }, 3400);
+        };
+
+        const initialDelay = 1200;
+        speechRTimeout = setTimeout(() => {
+            speak();
+            scheduleNext();
+        }, initialDelay);
     }
     
     let matrixInterval = null;
@@ -2545,7 +2622,7 @@ RRRR            RRRR`;
     let matrixSeedCache = null;
     let matrixHeavyLevel = 0;
     let matrixHeavyTarget = 0;
-    let matrixHeavyTimer = null;
+    let matrixHeavyTimers = [];
 
     function wrapAsciiRHint(rHint) {
         if (!rHint) return [];
@@ -2672,13 +2749,13 @@ RRRR            RRRR`;
             overlay.id = 'frameCascade';
         }
 
-        overlay.style.cssText = 'font-family:"Courier New", monospace; font-size:13px; line-height:1.6; white-space:pre; position:absolute; inset:10px; color:#0f0; text-shadow:0 0 3px #0f0; pointer-events:none; opacity:1; background:transparent;';
+        overlay.style.cssText = 'font-family:"VT323", "Courier New", monospace; font-size:15px; letter-spacing:0.12em; line-height:1.55; white-space:pre; position:absolute; inset:10px; color:#0f0; text-shadow:0 0 4px rgba(0,255,160,0.6); pointer-events:none; opacity:1; background:transparent; text-transform:uppercase;';
         frame.appendChild(overlay);
 
         const frameRect = frame.getBoundingClientRect();
         const columns = Math.max(1, Math.floor(frameRect.width / 8));
         const rows = Math.max(1, Math.floor(frameRect.height / 21));
-        const matrixChars = 'R∅01';
+        const matrixChars = 'R∅01░';
         let step = 0;
         const depth = rows + 18;
 
@@ -2750,14 +2827,14 @@ RRRR            RRRR`;
             animateAsciiRDeconstruction(rHint, () => {
                 rHint.dataset.deconstructed = '1';
                 cascadeAllCharacters(frame, () => {
-                    startMatrixDataFallOrganic(frame, { skipIntro: true, heavyDelay: 1500 });
+                    startMatrixDataFallOrganic(frame, { skipIntro: true, heavyDelay: 900 });
                 });
             });
             return;
         }
 
         console.log('🌊 Starting organic matrix data fall');
-        const matrixChars = 'R∅01';
+        const matrixChars = 'R∅01░';
 
         const frameRect = frame.getBoundingClientRect();
         const columns = Math.max(1, Math.floor(frameRect.width / 8));
@@ -2775,8 +2852,11 @@ RRRR            RRRR`;
             seedsByColumn.forEach((list) => list.sort((a, b) => a.row - b.row));
         }
 
+        const comedicBursts = ['PRESS·R', 'JUST·R', 'R·PLEASE', 'R·NOW'];
+        let activeBurst = null;
+
         let container = document.getElementById('matrixContainer');
-        const containerStyles = 'font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6; color: #0f0; text-shadow: 0 0 2px #0f0; white-space: pre; overflow: hidden; width: calc(100% - 20px); height: calc(100% - 20px); position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 50; background: transparent; margin: 0; padding: 0; opacity: 0; transition: opacity 1s ease, background-color 1.5s ease;';
+        const containerStyles = 'font-family: "VT323", "Courier New", monospace; font-size: 15px; letter-spacing: 0.12em; line-height: 1.55; color: #0f0; text-shadow: 0 0 2px rgba(0,255,160,0.6); white-space: pre; overflow: hidden; width: calc(100% - 20px); height: calc(100% - 20px); position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 50; background: transparent; margin: 0; padding: 0; opacity: 0; transition: opacity 1s ease, background-color 1.5s ease; text-transform: uppercase;';
         if (!container) {
             container = document.createElement('div');
             container.id = 'matrixContainer';
@@ -2788,21 +2868,72 @@ RRRR            RRRR`;
             console.log('♻️ Matrix container reset (within frame, respecting border)');
         }
 
+        frame.style.position = 'relative';
+        container.classList.add('matrix-plead');
+
+        let pleaOverlay = document.getElementById('matrixPleaOverlay');
+        if (!pleaOverlay) {
+            pleaOverlay = document.createElement('div');
+            pleaOverlay.id = 'matrixPleaOverlay';
+            pleaOverlay.setAttribute('aria-live', 'polite');
+            frame.appendChild(pleaOverlay);
+        }
+        pleaOverlay.classList.add('visible');
+        const pleaMessages = [
+            'R INPUT REQUIRED',
+            'JUST PRESS R',
+            'R = CONTINUE',
+            'TRUST THE R KEY'
+        ];
+        let overlayIndex = 0;
+        const pushOverlayMessage = () => {
+            pleaOverlay.textContent = pleaMessages[overlayIndex % pleaMessages.length];
+            overlayIndex++;
+            pleaOverlay.classList.add('glitch');
+            setTimeout(() => pleaOverlay.classList.remove('glitch'), 260);
+        };
+        pushOverlayMessage();
+        if (pleaOverlay.dataset.intervalId) {
+            clearInterval(Number(pleaOverlay.dataset.intervalId));
+            delete pleaOverlay.dataset.intervalId;
+        }
+        const overlayInterval = setInterval(() => {
+            pushOverlayMessage();
+        }, 2200);
+        pleaOverlay.dataset.intervalId = String(overlayInterval);
+
         if (matrixInterval) {
             clearInterval(matrixInterval);
             console.log('🛑 Cleared existing matrix interval');
         }
 
-        if (matrixHeavyTimer) {
-            clearTimeout(matrixHeavyTimer);
-            matrixHeavyTimer = null;
+        if (matrixHeavyTimers.length) {
+            matrixHeavyTimers.forEach(id => clearTimeout(id));
+            matrixHeavyTimers = [];
         }
         matrixHeavyLevel = 0;
-        matrixHeavyTarget = heavyRamp ? 1 : 0;
-        if (!heavyRamp && heavyDelay > 0) {
-            matrixHeavyTimer = setTimeout(() => {
-                matrixHeavyTarget = 1;
-            }, heavyDelay);
+        const rampSteps = [];
+        if (heavyRamp) {
+            matrixHeavyTarget = 1;
+        } else if (!skipIntro) {
+            matrixHeavyTarget = 0.35;
+            rampSteps.push({ at: 520, target: 0.55 });
+            rampSteps.push({ at: 1180, target: 0.78 });
+            rampSteps.push({ at: 1950, target: 1 });
+        } else {
+            matrixHeavyTarget = 0.25;
+            rampSteps.push({ at: 420, target: 0.55 });
+            rampSteps.push({ at: 960, target: 0.82 });
+            const finalAt = heavyDelay > 0 ? Math.max(heavyDelay, 1300) : 1400;
+            rampSteps.push({ at: finalAt, target: 1 });
+        }
+        if (rampSteps.length) {
+            rampSteps.forEach(step => {
+                const id = setTimeout(() => {
+                    matrixHeavyTarget = step.target;
+                }, step.at);
+                matrixHeavyTimers.push(id);
+            });
         }
 
         matrixOpacity = 0;
@@ -2909,10 +3040,17 @@ RRRR            RRRR`;
             }
 
             const heavyBlend = matrixHeavyLevel;
-            const activationSpeed = THREE.MathUtils.lerp(0.0075, 0.0045, heavyBlend);
-            activationProgress = Math.min(1, activationProgress + activationSpeed + heavyBlend * 0.006);
+            const activationSpeed = THREE.MathUtils.lerp(0.011, 0.0065, heavyBlend);
+            activationProgress = Math.min(1, activationProgress + activationSpeed + heavyBlend * 0.008);
             const activationMultiplier = heavyBlend > 0 ? 0.6 + heavyBlend * 0.4 : 1;
             const activationCutoff = activationProgress * activationMultiplier;
+
+            if (!activeBurst && activationCutoff > 0.22 && Math.random() < 0.07 + heavyBlend * 0.08) {
+                const phrase = comedicBursts[Math.floor(Math.random() * comedicBursts.length)];
+                const burstRow = Math.max(1, Math.min(rows - 2, Math.floor(rows * (0.35 + Math.random() * 0.3))));
+                const burstCol = Math.max(0, Math.floor(Math.random() * Math.max(1, columns - phrase.length - 2)));
+                activeBurst = { row: burstRow, col: burstCol, phrase };
+            }
 
             const lines = [];
             for (let i = 0; i < rows; i++) {
@@ -2924,11 +3062,24 @@ RRRR            RRRR`;
                         continue;
                     }
 
+                    if (activeBurst && i === activeBurst.row && j >= activeBurst.col && j < activeBurst.col + activeBurst.phrase.length) {
+                        line += activeBurst.phrase[j - activeBurst.col];
+                        continue;
+                    }
+
                     line += columnChar(matrixColumns[j], i, activationCutoff, heavyBlend);
                 }
                 lines.push(line);
+                if (activeBurst && i === activeBurst.row) {
+                    activeBurst = null;
+                }
             }
             container.textContent = lines.join('\n');
+
+            if (!container.classList.contains('matrix-plead-flash') && Math.random() < 0.018 + heavyBlend * 0.05) {
+                container.classList.add('matrix-plead-flash');
+                setTimeout(() => container.classList.remove('matrix-plead-flash'), 240);
+            }
 
             const seededMax = THREE.MathUtils.lerp(1.05, 1.55, heavyBlend);
             const ambientMax = THREE.MathUtils.lerp(1.0, 1.45, heavyBlend);
@@ -2994,7 +3145,21 @@ RRRR            RRRR`;
     function stopMatrixAndFormBlackR(frame, onComplete) {
         console.log('🔴 Organically forming BLACK R in negative space');
 
-        const matrixChars = 'R∅01';
+        const pleaOverlay = document.getElementById('matrixPleaOverlay');
+        if (pleaOverlay) {
+            if (pleaOverlay.dataset.intervalId) {
+                clearInterval(Number(pleaOverlay.dataset.intervalId));
+                delete pleaOverlay.dataset.intervalId;
+            }
+            pleaOverlay.remove();
+        }
+
+        if (matrixHeavyTimers.length) {
+            matrixHeavyTimers.forEach(id => clearTimeout(id));
+            matrixHeavyTimers = [];
+        }
+
+        const matrixChars = 'R∅01░';
         const frameRect = frame.getBoundingClientRect();
         const cols = Math.floor(frameRect.width / 8);
         const rows = Math.floor(frameRect.height / 21);
@@ -3008,6 +3173,7 @@ RRRR            RRRR`;
 
         const container = document.getElementById('matrixContainer');
         if (container) {
+            container.classList.remove('matrix-plead', 'matrix-plead-flash');
             container.style.backgroundColor = 'rgba(0, 0, 0, 0.98)';
             container.style.opacity = '1';
             container.style.textShadow = '0 0 4px #0f0, 0 0 8px #0f0';
