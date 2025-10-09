@@ -2520,12 +2520,25 @@ RRRR      RRR`;
         speechRActive = true;
 
         const hasSpeechSynthesis = typeof window !== 'undefined' && 'speechSynthesis' in window;
-        const phrases = [
-            'R. Just the letter R.',
-            'It is literally one key. Press R.',
-            'VisiCell is waiting on a single R.',
-            'Please deposit a solitary R. Thank you.'
+        const speechSequence = [
+            { mode: 'manual', fallback: { duration: 0.58, filterStart: 690, filterEnd: 520, gainPeak: 0.16, growl: 0.18 } },
+            { mode: 'manual', fallback: { duration: 0.64, filterStart: 760, filterEnd: 500, gainPeak: 0.18, growl: 0.26, noise: 0.035 } },
+            { mode: 'manual', fallback: { duration: 0.7, filterStart: 720, filterEnd: 460, gainPeak: 0.2, growl: 0.32, noise: 0.05, crackle: 0.02 } },
+            { mode: 'tts', text: 'Manual R attempt unsuccessful. Switching to sanitized narration.', rate: 1.02, pitch: 1.12, volume: 0.98, distortion: { duration: 1.2, intensity: 0.05 } },
+            { mode: 'tts', text: 'R. Just the letter R. Please press it.', rate: 0.94, pitch: 1.04, volume: 0.94 },
+            { mode: 'tts', text: 'VisiCell is still waiting on a single R. Kind of embarrassing for both of us.', rate: 0.9, pitch: 1, volume: 0.92, distortion: { duration: 1.4, intensity: 0.08 } },
+            { mode: 'tts', text: 'Please deposit a solitary R. Thank you.', rate: 0.88, pitch: 1.02, volume: 0.9 },
+            { mode: 'tts', text: 'I am literally pleading now. R. Pretty please.', rate: 0.82, pitch: 0.98, volume: 0.86, distortion: { duration: 1.6, intensity: 0.1 } },
+            { mode: 'tts', text: 'Oh look, another timeless moment with zero R input. Delightful.', rate: 0.78, pitch: 1.08, volume: 0.83, distortion: { duration: 1.2, intensity: 0.07 } },
+            { mode: 'tts', text: 'Is the keyboard decorative? Because the R key would love a purpose.', rate: 0.75, pitch: 1, volume: 0.8 },
+            { mode: 'tts', text: 'New tactic: haunting monotone. R. R. R. Consider yourself haunted.', rate: 0.7, pitch: 0.92, volume: 0.74, distortion: { duration: 1.8, intensity: 0.12 } },
+            { mode: 'tts', text: 'I can get quieter. Watch. R.', rate: 0.66, pitch: 0.88, volume: 0.55 },
+            { mode: 'tts', text: 'This is my quiet voice. Please press R before it becomes my disappointed voice.', rate: 0.64, pitch: 0.86, volume: 0.45 },
+            { mode: 'tts', text: 'Snark subroutine engaged: refusing to press R is a bold creative choice.', rate: 0.68, pitch: 0.95, volume: 0.6, distortion: { duration: 1.5, intensity: 0.09 } },
+            { mode: 'tts', text: 'Last call before I start narrating your inaction like a documentary. R.', rate: 0.6, pitch: 0.9, volume: 0.5 },
+            { mode: 'tts', text: 'Fine. I will wait here... very quietly... repeating... r.', rate: 0.56, pitch: 0.82, volume: 0.38, distortion: { duration: 2.2, intensity: 0.05 } }
         ];
+        const manualAttemptCount = speechSequence.filter(item => item.mode === 'manual').length;
         let phraseIndex = 0;
 
         if (hasSpeechSynthesis && !speechRVoice) {
@@ -2553,65 +2566,161 @@ RRRR      RRR`;
             }
         }
 
-        const speakFallback = () => {
+        const speakFallback = (options = {}) => {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const now = audioCtx.currentTime;
-            const duration = 0.58;
+            const {
+                duration = 0.58,
+                baseFrequency = 126,
+                filterStart = 720,
+                filterEnd = 510,
+                q = 5.5,
+                gainAttack = 0.08,
+                gainPeak = 0.18,
+                gainRelease = 0.1,
+                gainEnd = 0.001,
+                waveform = 'sawtooth',
+                growl = 0,
+                noise = 0,
+                crackle = 0
+            } = options;
+
             const vowelOsc = audioCtx.createOscillator();
             const vowelGain = audioCtx.createGain();
             const vowelFilter = audioCtx.createBiquadFilter();
 
-            vowelOsc.type = 'sawtooth';
-            vowelOsc.frequency.setValueAtTime(126, now);
+            vowelOsc.type = waveform;
+            vowelOsc.frequency.setValueAtTime(baseFrequency, now);
 
             vowelFilter.type = 'bandpass';
-            vowelFilter.frequency.setValueAtTime(720, now);
-            vowelFilter.frequency.linearRampToValueAtTime(510, now + duration);
-            vowelFilter.Q.value = 5.5;
+            vowelFilter.frequency.setValueAtTime(filterStart, now);
+            vowelFilter.frequency.linearRampToValueAtTime(filterEnd, now + duration);
+            vowelFilter.Q.value = q;
 
             vowelGain.gain.setValueAtTime(0, now);
-            vowelGain.gain.linearRampToValueAtTime(0.18, now + 0.08);
-            vowelGain.gain.linearRampToValueAtTime(0.12, now + duration - 0.1);
-            vowelGain.gain.linearRampToValueAtTime(0.001, now + duration + 0.05);
+            vowelGain.gain.linearRampToValueAtTime(gainPeak, now + gainAttack);
+            vowelGain.gain.linearRampToValueAtTime(gainPeak * 0.75, now + duration - gainRelease);
+            vowelGain.gain.linearRampToValueAtTime(gainEnd, now + duration + 0.05);
 
             vowelOsc.connect(vowelFilter);
             vowelFilter.connect(vowelGain);
             vowelGain.connect(audioCtx.destination);
 
+            if (growl > 0) {
+                const growlOsc = audioCtx.createOscillator();
+                const growlGain = audioCtx.createGain();
+                growlOsc.type = 'square';
+                growlOsc.frequency.setValueAtTime(Math.max(40, baseFrequency * 0.45), now);
+                growlGain.gain.setValueAtTime(0, now);
+                growlGain.gain.linearRampToValueAtTime(growl * 0.45, now + 0.12);
+                growlGain.gain.linearRampToValueAtTime(0.0001, now + duration);
+                growlOsc.connect(growlGain);
+                growlGain.connect(audioCtx.destination);
+                growlOsc.start(now);
+                growlOsc.stop(now + duration);
+            }
+
+            if (noise > 0 || crackle > 0) {
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < data.length; i++) {
+                    const baseNoise = (Math.random() * 2 - 1) * noise;
+                    const crackleSample = (i % Math.max(1, Math.round(audioCtx.sampleRate * 0.015)) === 0) ? (Math.random() * 2 - 1) * crackle : 0;
+                    data[i] = baseNoise + crackleSample;
+                }
+                const noiseSource = audioCtx.createBufferSource();
+                const noiseGain = audioCtx.createGain();
+                noiseSource.buffer = buffer;
+                noiseGain.gain.setValueAtTime(noise + crackle, now);
+                noiseGain.gain.linearRampToValueAtTime(0.0001, now + duration);
+                noiseSource.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+                noiseSource.start(now);
+                noiseSource.stop(now + duration);
+            }
+
             vowelOsc.start(now);
             vowelOsc.stop(now + duration);
         };
 
+        const triggerDistortion = (duration = 1.4, intensity = 0.08) => {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            const buffer = audioCtx.createBuffer(1, Math.max(1, Math.floor(audioCtx.sampleRate * duration)), audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                const t = i / audioCtx.sampleRate;
+                const flutter = Math.sin(t * 320) * 0.3 + Math.sin(t * 90) * 0.2;
+                data[i] = (Math.random() * 2 - 1) * intensity * (0.6 + flutter * 0.4);
+            }
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(420 + Math.random() * 520, now);
+            filter.Q.value = 0.6 + Math.random() * 1.1;
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(intensity, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            source.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            source.start(now);
+            source.stop(now + duration);
+        };
+
+        const getSequenceEntry = (index) => {
+            if (index < speechSequence.length) return speechSequence[index];
+            if (manualAttemptCount >= speechSequence.length) {
+                return speechSequence[speechSequence.length - 1];
+            }
+            const loopableCount = speechSequence.length - manualAttemptCount;
+            const loopIndex = manualAttemptCount + ((index - manualAttemptCount) % loopableCount);
+            return speechSequence[loopIndex];
+        };
+
         const speak = () => {
             if (!speechRActive) return;
-            if (hasSpeechSynthesis) {
-                const utterance = new SpeechSynthesisUtterance(phrases[phraseIndex % phrases.length]);
-                utterance.rate = 0.92;
-                utterance.pitch = 1.05;
-                utterance.volume = 0.94;
+            const entry = getSequenceEntry(phraseIndex);
+            const delay = entry.delay ?? (entry.mode === 'manual' ? 2200 : 3400);
+
+            if (entry.mode === 'manual' || !hasSpeechSynthesis) {
+                speakFallback(entry.fallback || entry);
+            } else if (hasSpeechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(entry.text);
+                utterance.rate = entry.rate ?? 0.92;
+                utterance.pitch = entry.pitch ?? 1.05;
+                utterance.volume = entry.volume ?? 0.94;
                 if (speechRVoice) {
                     utterance.voice = speechRVoice;
                 }
-                phraseIndex++;
                 window.speechSynthesis.cancel();
                 window.speechSynthesis.speak(utterance);
-            } else {
-                speakFallback();
+                if (entry.distortion) {
+                    triggerDistortion(entry.distortion.duration, entry.distortion.intensity);
+                }
             }
+
+            phraseIndex++;
+            return delay;
         };
 
-        const scheduleNext = () => {
+        const scheduleNext = (delay) => {
             if (!speechRActive) return;
             speechRTimeout = setTimeout(() => {
-                speak();
-                scheduleNext();
-            }, 3400);
+                const nextDelay = speak();
+                if (typeof nextDelay === 'number') {
+                    scheduleNext(nextDelay);
+                }
+            }, delay);
         };
 
         const initialDelay = 1200;
         speechRTimeout = setTimeout(() => {
-            speak();
-            scheduleNext();
+            const nextDelay = speak();
+            if (typeof nextDelay === 'number') {
+                scheduleNext(nextDelay);
+            }
         }, initialDelay);
     }
     
