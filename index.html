@@ -937,6 +937,7 @@
     let bowAnimationId = 0;
     let bowHasTriggered = false;
     let bowVisibleAsVoxel = true;
+    let bowSuppressedUntilRestore = false;
     let skipVisibilityTimeout = null;
     const bowColorPalettes = {
         base: { fill: [1.0, 1.0, 1.0], stroke: [1.0, 1.0, 1.0], glow: 0.35, connector: 0.0 },
@@ -1695,6 +1696,7 @@
         if (!letterVoxelsList || letterVoxelsList.length === 0) return false;
 
         if (letterKey === 'C') {
+            bowSuppressedUntilRestore = false;
             setSkipVisibility(true, { flicker: true, immediate: true });
         }
 
@@ -2303,9 +2305,10 @@
 
         const shouldShow = visibleCount > totalCount * 0.25;
         const wasVisible = bowVisibleAsVoxel;
-        setSkipVisibility(shouldShow);
+        const effectiveShouldShow = bowSuppressedUntilRestore ? false : shouldShow;
+        setSkipVisibility(effectiveShouldShow);
 
-        if (shouldShow && !wasVisible && skipBtn.classList.contains('bow-shape')) {
+        if (effectiveShouldShow && !wasVisible && skipBtn.classList.contains('bow-shape')) {
             moveBowToTarget(true);
         }
     }
@@ -2406,6 +2409,7 @@
                 </div>
                 <div id="visicellinput" style="position: absolute; bottom: 24px; left: 36px; right: auto; top: auto; border-top: 1px solid #0f0; padding-top: 10px; opacity: 0; animation: fadeInVisi 0.3s ease forwards 1s; cursor: text; font-family: 'VT323', 'Courier New', monospace; font-size: 16px; letter-spacing: 0.18em; z-index: 100; pointer-events: auto; text-align: left; text-transform: uppercase;">
                     <span id="visicellprompt">ENTE<span style="animation: blink 1s step-end infinite;">_</span></span>
+                    <input id="visicellfocus" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-hidden="true" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; border: 0; padding: 0; margin: 0; background: transparent; color: transparent; caret-color: transparent;" />
                 </div>
             </div>
             <style>
@@ -2469,10 +2473,60 @@
         
         const inputEl = document.getElementById('visicellinput');
         const promptEl = document.getElementById('visicellprompt');
+        const focusInput = document.getElementById('visicellfocus');
         const visiCalc = document.getElementById('visicalc');
         const frame = document.getElementById('visicalc-frame');
         if (!inputEl || !promptEl) return;
-        
+
+        const focusHiddenInput = () => {
+            if (!focusInput) return;
+            focusInput.value = terminalInput;
+            focusInput.focus({ preventScroll: true });
+            requestAnimationFrame(() => {
+                try {
+                    const len = focusInput.value.length;
+                    focusInput.setSelectionRange(len, len);
+                } catch (err) {
+                    // Ignore selection errors on unsupported inputs
+                }
+            });
+        };
+
+        const handleActivationPointer = (event) => {
+            if (!terminalActive) return;
+            focusHiddenInput();
+        };
+
+        inputEl.addEventListener('pointerdown', handleActivationPointer);
+        inputEl.addEventListener('click', handleActivationPointer);
+        inputEl.addEventListener('touchstart', handleActivationPointer);
+
+        if (focusInput) {
+            focusInput.value = terminalInput;
+            focusInput.addEventListener('focus', () => {
+                requestAnimationFrame(() => {
+                    try {
+                        const len = focusInput.value.length;
+                        focusInput.setSelectionRange(len, len);
+                    } catch (err) {
+                        // Ignore selection errors
+                    }
+                });
+            });
+
+            focusInput.addEventListener('input', () => {
+                if (!terminalActive) return;
+                const sanitized = focusInput.value.toUpperCase().replace(/[^A-Z0-9._]/g, '');
+                if (sanitized !== terminalInput) {
+                    terminalInput = sanitized;
+                    updateTerminalPrompt();
+                    evaluateTerminalInputDrift();
+                } else {
+                    updateTerminalPrompt();
+                }
+            });
+        }
+
         // Clicking anywhere (except input area) triggers R infection
         if (visiCalc) {
             visiCalc.addEventListener('click', (e) => {
@@ -2520,8 +2574,24 @@
     
     function updateTerminalPrompt() {
         const promptEl = document.getElementById('visicellprompt');
-        if (!promptEl) return;
-        promptEl.innerHTML = terminalInput + '<span style="animation: blink 1s step-end infinite;">_</span>';
+        if (promptEl) {
+            promptEl.innerHTML = terminalInput + '<span style="animation: blink 1s step-end infinite;">_</span>';
+        }
+
+        const focusInput = document.getElementById('visicellfocus');
+        if (focusInput) {
+            focusInput.value = terminalInput;
+            if (document.activeElement === focusInput) {
+                requestAnimationFrame(() => {
+                    try {
+                        const len = focusInput.value.length;
+                        focusInput.setSelectionRange(len, len);
+                    } catch (err) {
+                        // Ignore selection errors
+                    }
+                });
+            }
+        }
     }
 
     const validTerminalCommands = ['ENTER', 'EXIT', 'LEAVE', 'MYHOUSE.WAD', 'OURHOUSE.LOOM', 'MADNESS.LOOM'];
@@ -4278,6 +4348,7 @@ RRRR      RRR`;
         if (celliGlitchStarted) return;
         celliGlitchStarted = true;
 
+        bowSuppressedUntilRestore = true;
         setSkipVisibility(false, { flicker: true, immediate: true });
 
         // Play electrical fritz whir/buzz sound
