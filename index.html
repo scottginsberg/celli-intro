@@ -82,6 +82,11 @@
       text-transform:uppercase;
       z-index: 2;
       white-space: nowrap;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transform-origin:center;
+      will-change: transform, letter-spacing, opacity;
     }
     /* Shadow trick - vertically flipped and stretched text acting as shadow */
     .prompt::after {
@@ -105,10 +110,28 @@
       mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0) 100%);
       -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0) 100%);
     }
+    .prompt-container.snap-shut { pointer-events:none; animation: promptContainerSnap 0.42s cubic-bezier(0.5, 0, 0.3, 1) forwards; }
+    .prompt.prompt-snap-shut { animation: promptSnapShut 0.42s cubic-bezier(0.5, 0, 0.3, 1) forwards; }
+    .prompt.prompt-snap-shut::after { animation: promptShadowSnap 0.42s cubic-bezier(0.5, 0, 0.3, 1) forwards; }
     .cursor { animation:blink 1s step-end infinite; }
     @keyframes blink {
       0%, 50% { opacity:1; }
       51%, 100% { opacity:0; }
+    }
+    @keyframes promptContainerSnap {
+      0% { opacity:1; }
+      100% { opacity:0; }
+    }
+    @keyframes promptSnapShut {
+      0% { transform: scaleX(1) translateY(0); letter-spacing:0.22em; opacity:1; }
+      38% { transform: scaleX(0.75) translateY(-2px) skewX(-2deg); letter-spacing:0.12em; }
+      68% { transform: scaleX(0.4) translateY(-4px) skewX(1.2deg); letter-spacing:0.02em; }
+      100% { transform: scaleX(0) translateY(-6px); letter-spacing:-0.08em; opacity:0; }
+    }
+    @keyframes promptShadowSnap {
+      0% { transform: translate(18px, -4px) scaleY(-1.05) skewX(-18deg) scaleX(1.2); opacity:0.38; }
+      45% { transform: translate(12px, 0) scaleY(-0.9) skewX(-8deg) scaleX(0.6); opacity:0.2; }
+      100% { transform: translate(0, 6px) scaleY(-0.45) skewX(0deg) scaleX(0); opacity:0; }
     }
     
     /* CELLI glitch effects */
@@ -144,20 +167,20 @@
     .play button::before{ content:"▶"; font-size:14px; opacity:.9; }
     
     /* Skip button */
-    .skip-btn { position:fixed; bottom:20px; left:50%; transform:translate(-50%, 0); pointer-events:auto; cursor:pointer; z-index:70; opacity:0.75; display:flex; align-items:center; justify-content:center; gap:0; transition: opacity 0.45s ease; --skip-triangle-size:24px; --skip-triangle-height: calc(var(--skip-triangle-size) * 0.8660254038); }
+    .skip-btn { position:fixed; bottom:20px; left:50%; transform:translate(-50%, 0); pointer-events:auto; cursor:pointer; z-index:70; opacity:0.75; display:flex; align-items:center; justify-content:center; gap:0; transition: opacity 0.45s ease; --skip-triangle-size:24px; --skip-triangle-height: calc(var(--skip-triangle-size) * 0.8660254038); --bow-fill:#ffffff; --bow-stroke:rgba(255,255,255,0.35); --bow-filter: drop-shadow(0 2px 6px rgba(255,255,255,0.55)) drop-shadow(0 0 18px rgba(138,180,255,0.35)); --bow-connector-bg: rgba(255,255,255,0.92); --bow-connector-shadow:0 0 14px rgba(255,255,255,0.55), 0 0 20px rgba(138,180,255,0.45); --bow-connector-opacity:0; }
     .skip-btn:hover { opacity:1; }
     .skip-btn.hidden { display:none; }
     .skip-btn.bow-lock { pointer-events:none; }
     .skip-btn.voxel-hidden { opacity:0; pointer-events:none; transition: opacity 0.35s ease, filter 0.35s ease; filter: brightness(0.65); }
     .skip-btn.golden-phase { color:#fff48a; }
     .skip-triangle { position:relative; width:var(--skip-triangle-size); height:var(--skip-triangle-height); display:flex; align-items:center; justify-content:center; transition: transform 0.85s cubic-bezier(0.19, 1, 0.22, 1), filter 0.6s ease; }
-    .skip-triangle__inner { width:100%; height:100%; display:flex; filter: drop-shadow(0 2px 6px rgba(255,255,255,0.55)); transform-origin:center; transition: filter 0.6s ease, transform 0.6s ease; }
+    .skip-triangle__inner { width:100%; height:100%; display:flex; filter: var(--bow-filter); transform-origin:center; transition: filter 0.6s ease, transform 0.6s ease; }
     .skip-triangle--right .skip-triangle__inner { transform: scaleX(-1); }
     .skip-triangle svg { width:100%; height:100%; display:block; }
-    .skip-triangle polygon, .skip-triangle path { fill:#fff; stroke:rgba(255,255,255,0.35); stroke-width:5; stroke-linejoin:round; transition: stroke 0.6s ease, fill 0.6s ease, opacity 0.5s ease; }
+    .skip-triangle polygon, .skip-triangle path { fill:var(--bow-fill); stroke:var(--bow-stroke); stroke-width:5; stroke-linejoin:round; transition: stroke 0.6s ease, fill 0.6s ease, opacity 0.5s ease; }
     .skip-triangle path { opacity:0; }
-    .skip-btn:not(.bow-shape) .skip-triangle--left { transform: translateX(calc(var(--skip-triangle-size) * -0.38)); }
-    .skip-btn:not(.bow-shape) .skip-triangle--right { transform: translateX(calc(var(--skip-triangle-size) * 0.38)); }
+    .skip-btn:not(.bow-shape) .skip-triangle--left { transform: translateX(0); }
+    .skip-btn:not(.bow-shape) .skip-triangle--right { transform: translateX(0); }
     .skip-btn.bow-shape { gap:0; opacity:1; --skip-triangle-size:30px; }
     .skip-btn.bow-shape .skip-triangle { position:absolute; top:50%; left:50%; margin:0; }
     .skip-btn.bow-shape .skip-triangle__inner { filter: drop-shadow(0 4px 10px rgba(255,255,255,0.5)) drop-shadow(0 0 18px rgba(255,255,255,0.35)); }
@@ -167,19 +190,34 @@
     .skip-connector { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:0; height:0; border-radius:0; background:transparent; box-shadow:none; opacity:0; transition: all 0.6s ease; pointer-events:none; }
     .skip-btn.rounded-bow .skip-triangle polygon { opacity:0; }
     .skip-btn.rounded-bow .skip-triangle path { opacity:1; }
-    .skip-btn.rounded-bow .skip-connector { width:calc(var(--skip-triangle-size) * 0.45); height:calc(var(--skip-triangle-size) * 0.45); border-radius:calc(var(--skip-triangle-size) * 0.12); background:rgba(255,255,255,0.92); box-shadow:0 0 14px rgba(255,255,255,0.55), 0 0 20px rgba(138,180,255,0.45); opacity:1; }
+    .skip-btn.rounded-bow .skip-connector { width:calc(var(--skip-triangle-size) * 0.45); height:calc(var(--skip-triangle-size) * 0.45); border-radius:calc(var(--skip-triangle-size) * 0.12); background:var(--bow-connector-bg); box-shadow:var(--bow-connector-shadow); opacity:var(--bow-connector-opacity); }
     .skip-btn.illuminating .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite; }
     .skip-btn.illuminating.bow-shape .skip-triangle--left .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite, skipJiggleLeft 1.6s ease-in-out infinite; }
     .skip-btn.illuminating.bow-shape .skip-triangle--right .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite, skipJiggleRight 1.6s ease-in-out infinite; }
     .skip-btn.illuminating.rounded-bow .skip-connector { animation: skipCenterPulse 2.2s ease-in-out infinite; }
     .skip-btn.illuminating .skip-triangle polygon { animation: skipFillShimmer 2s ease-in-out infinite, skipOutlinePulse 2.8s ease-in-out infinite; }
     .skip-btn.illuminating.rounded-bow .skip-triangle path { animation: skipFillShimmer 2s ease-in-out infinite, skipOutlinePulse 2.8s ease-in-out infinite; }
-    .skip-btn.golden-phase .skip-triangle polygon,
-    .skip-btn.golden-phase .skip-triangle path { fill:#fff48a; stroke:rgba(255,214,120,0.75); }
-    .skip-btn.golden-phase .skip-triangle__inner { filter: drop-shadow(0 4px 12px rgba(255,215,96,0.58)) drop-shadow(0 0 22px rgba(255,238,160,0.48)); }
-    .skip-btn.golden-phase.rounded-bow .skip-connector { background: radial-gradient(circle at 50% 45%, rgba(255,248,170,0.95) 0%, rgba(255,219,92,0.9) 45%, rgba(255,199,60,0.8) 100%); box-shadow:0 0 20px rgba(255,215,96,0.65), 0 0 30px rgba(255,239,168,0.55); }
+    .skip-btn.golden-phase { --bow-fill:#fff48a; --bow-stroke:rgba(255,214,120,0.75); --bow-filter: drop-shadow(0 4px 12px rgba(255,215,96,0.58)) drop-shadow(0 0 22px rgba(255,238,160,0.48)); --bow-connector-bg: radial-gradient(circle at 50% 45%, rgba(255,248,170,0.95) 0%, rgba(255,219,92,0.9) 45%, rgba(255,199,60,0.8) 100%); --bow-connector-shadow:0 0 20px rgba(255,215,96,0.65), 0 0 30px rgba(255,239,168,0.55); --bow-connector-opacity:1; }
     .skip-btn.golden-phase.illuminating .skip-triangle polygon,
     .skip-btn.golden-phase.illuminating .skip-triangle path { animation: skipFillShimmer 2s ease-in-out infinite, skipOutlinePulse 2.8s ease-in-out infinite; }
+
+    .skip-btn.bow-flicker-out { animation: bowFlickerOut 0.28s ease-out forwards; }
+    .skip-btn.bow-flicker-in { animation: bowFlickerIn 0.32s ease-out forwards; }
+
+    @keyframes bowFlickerOut {
+      0% { opacity:1; filter:brightness(1); }
+      22% { opacity:0.35; filter:brightness(0.6); }
+      48% { opacity:0.8; filter:brightness(1.28); }
+      70% { opacity:0.18; filter:brightness(0.45); }
+      100% { opacity:0; filter:brightness(0.35); }
+    }
+
+    @keyframes bowFlickerIn {
+      0% { opacity:0; filter:brightness(0.4); }
+      28% { opacity:0.72; filter:brightness(1.35); }
+      56% { opacity:0.38; filter:brightness(0.75); }
+      100% { opacity:1; filter:brightness(1); }
+    }
 
     @keyframes skipGlowPulse {
       0%, 100% { filter: drop-shadow(0 4px 10px rgba(255,255,255,0.5)) drop-shadow(0 0 18px rgba(138,180,255,0.45)); }
@@ -830,6 +868,23 @@
     let bowAnimationId = 0;
     let bowHasTriggered = false;
     let bowVisibleAsVoxel = true;
+    let skipVisibilityTimeout = null;
+    const bowColorPalettes = {
+        base: { fill: [1.0, 1.0, 1.0], stroke: [1.0, 1.0, 1.0], glow: 0.35, connector: 0.0 },
+        yellow: { fill: [1.0, 0.95, 0.3], stroke: [1.0, 0.85, 0.35], glow: 0.85, connector: 0.95 },
+        magenta: { fill: [0.95, 0.2, 0.5], stroke: [1.0, 0.35, 0.65], glow: 0.7, connector: 0.85 },
+        cyan: { fill: [0.2, 0.7, 0.95], stroke: [0.3, 0.85, 1.0], glow: 0.7, connector: 0.85 },
+        green: { fill: [0.3, 0.9, 0.4], stroke: [0.4, 1.0, 0.5], glow: 0.55, connector: 0.75 },
+        visicell: { fill: [0.0, 1.0, 0.0], stroke: [0.25, 1.0, 0.3], glow: 0.25, connector: 0.7 }
+    };
+    let lastBowAppearance = {
+        fill: '',
+        stroke: '',
+        filter: '',
+        connectorBg: '',
+        connectorShadow: '',
+        connectorOpacity: ''
+    };
     let pendingRoundedBow = false;
     
     // Text particle system for click interactions
@@ -1408,32 +1463,33 @@
                         bloomPass.strength = 0.0;
                         
                         // Collapse into tighter mono-spaced grid
-                        const monoSpacing = 0.022; // Tight pixel spacing
+                        const monoSpacing = 0.018; // Tight pixel spacing
                         const monoX = data.gridCol * monoSpacing;
                         const monoY = -data.gridRow * monoSpacing;
                         const letterOffsetX = data.letterIdx * 5 * monoSpacing; // 5 columns per letter
-                        
+
                         posX = THREE.MathUtils.lerp(data.targetX, letterOffsetX + monoX, greenProgress);
                         posY = THREE.MathUtils.lerp(data.targetY, monoY, greenProgress);
-                        
+
                         voxel.position.x = posX;
                         voxel.position.y = posY;
-                        voxel.scale.set(data.baseScale * 0.95, data.baseScale * 0.95, data.baseScale * 0.95);
+                        const shrinkScale = THREE.MathUtils.lerp(data.baseScale * 0.9, data.baseScale * 0.32, greenProgress);
+                        voxel.scale.set(shrinkScale, shrinkScale, shrinkScale);
                     } else if (snapElapsed < vibrateDuration + jiggleDuration + greenTransitionDuration + flatHoldDuration) {
                         // Hold as flat green pixels in mono-spaced positions
                         bloomPass.strength = 0.0;
                         voxel.material.color.setRGB(0.0, 1.0, 0.0);
                         voxel.material.opacity = 1.0;
-                        
+
                         // Hold at mono-spaced positions
-                        const monoSpacing = 0.022;
+                        const monoSpacing = 0.018;
                         const monoX = data.gridCol * monoSpacing;
                         const monoY = -data.gridRow * monoSpacing;
                         const letterOffsetX = data.letterIdx * 5 * monoSpacing;
-                        
+
                         voxel.position.x = letterOffsetX + monoX;
                         voxel.position.y = monoY;
-                        voxel.scale.set(data.baseScale * 0.95, data.baseScale * 0.95, data.baseScale * 0.95);
+                        voxel.scale.set(data.baseScale * 0.32, data.baseScale * 0.32, data.baseScale * 0.32);
                     } else {
                         // After flat hold, start move to corner
                         if (!celliMoveToCornerStarted) {
@@ -1507,8 +1563,8 @@
                             // Target position: top-left corner (where "A1: CELLI" appears)
                             const targetX = -0.85;
                             const targetY = 0.75;
-                            const targetScale = 0.45; // Smaller for VisiCell text
-                            
+                            const targetScale = 0.32; // Smaller for VisiCell text
+
                             // Calculate target offset based on grid position
                             const visiCellSpacing = 0.018; // Tighter for VisiCell
                             const targetOffsetX = data.gridCol * visiCellSpacing;
@@ -1528,7 +1584,7 @@
                             // Hold at final VisiCell position
                             const targetX = -0.85;
                             const targetY = 0.75;
-                            const targetScale = 0.45;
+                            const targetScale = 0.32;
                             const visiCellSpacing = 0.018;
                             const targetOffsetX = data.gridCol * visiCellSpacing;
                             const targetOffsetY = -data.gridRow * visiCellSpacing;
@@ -1566,13 +1622,17 @@
         
         const letterKey = lettersToRestore[restoredLetters];
         const letterVoxelsList = letterVoxels[letterKey];
-        
+
         if (!letterVoxelsList || letterVoxelsList.length === 0) return false;
-        
+
+        if (letterKey === 'C') {
+            setSkipVisibility(true, { flicker: true, immediate: true });
+        }
+
         // Play electrical fritz sound
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const now = audioCtx.currentTime;
-        
+
         // Bigger fritz sound for whole letter
         const buzz = audioCtx.createOscillator();
         const buzzGain = audioCtx.createGain();
@@ -1826,7 +1886,16 @@
         if (skipBtn) {
             skipBtn.classList.remove('golden-phase');
         }
-        
+
+        const promptContainerEl = document.querySelector('.prompt-container');
+        const promptElement = document.querySelector('.prompt');
+        if (promptContainerEl) {
+            promptContainerEl.classList.add('snap-shut');
+        }
+        if (promptElement) {
+            promptElement.classList.add('prompt-snap-shut');
+        }
+
         // Change back to square geometry immediately
         voxels.forEach((voxel, idx) => {
             const data = voxel.userData;
@@ -1849,7 +1918,173 @@
         // VisiCell will be shown after animation completes (triggered in updateVoxels)
         // snapTogetherTime will be set on first frame in updateVoxels
     }
-    
+
+    function setSkipVisibility(visible, { flicker = false, immediate = false } = {}) {
+        const skipBtn = document.getElementById('skipBtn');
+        if (!skipBtn) {
+            bowVisibleAsVoxel = visible;
+            return;
+        }
+
+        if (!immediate && bowVisibleAsVoxel === visible) {
+            return;
+        }
+
+        if (skipVisibilityTimeout) {
+            clearTimeout(skipVisibilityTimeout);
+            skipVisibilityTimeout = null;
+        }
+
+        skipBtn.classList.remove('bow-flicker-in', 'bow-flicker-out');
+
+        if (visible) {
+            skipBtn.classList.remove('voxel-hidden');
+            if (skipBtn.classList.contains('bow-lock')) {
+                skipBtn.style.pointerEvents = 'none';
+            } else {
+                skipBtn.style.pointerEvents = 'auto';
+            }
+            if (flicker) {
+                requestAnimationFrame(() => skipBtn.classList.add('bow-flicker-in'));
+                skipVisibilityTimeout = setTimeout(() => {
+                    skipBtn.classList.remove('bow-flicker-in');
+                    skipVisibilityTimeout = null;
+                }, 320);
+            }
+        } else {
+            skipBtn.style.pointerEvents = 'none';
+            if (flicker) {
+                skipBtn.classList.remove('voxel-hidden');
+                requestAnimationFrame(() => skipBtn.classList.add('bow-flicker-out'));
+                skipVisibilityTimeout = setTimeout(() => {
+                    skipBtn.classList.remove('bow-flicker-out');
+                    skipBtn.classList.add('voxel-hidden');
+                    skipVisibilityTimeout = null;
+                }, 280);
+            } else {
+                skipBtn.classList.add('voxel-hidden');
+            }
+        }
+
+        bowVisibleAsVoxel = visible;
+    }
+
+    function updateBowAppearance(t) {
+        const skipBtn = document.getElementById('skipBtn');
+        if (!skipBtn) return;
+
+        const to255 = (value) => Math.round(Math.min(1, Math.max(0, value)) * 255);
+        const lerp = THREE.MathUtils.lerp;
+
+        let paletteFrom = bowColorPalettes.base;
+        let paletteTo = bowColorPalettes.base;
+        let transitionProgress = 1;
+        let allowPulse = false;
+
+        if (visiCalcGreenTransitionStarted) {
+            paletteFrom = bowColorPalettes.visicell;
+            paletteTo = bowColorPalettes.visicell;
+        } else if (endColorTransitionStart > 0 && endColorState !== endColorPrevState) {
+            paletteFrom = bowColorPalettes[endColorPrevState] || bowColorPalettes.yellow;
+            paletteTo = bowColorPalettes[endColorState] || bowColorPalettes.yellow;
+            const elapsed = t - endColorTransitionStart;
+            transitionProgress = Math.max(0, Math.min(1, elapsed / 0.6));
+            allowPulse = endColorState !== 'green' || transitionProgress < 1;
+        } else if (allYellowTransformed) {
+            paletteFrom = bowColorPalettes[endColorState] || bowColorPalettes.yellow;
+            paletteTo = paletteFrom;
+            allowPulse = endColorState !== 'green';
+        } else if (celliBackspaceSequenceStarted) {
+            paletteFrom = bowColorPalettes.yellow;
+            paletteTo = bowColorPalettes.yellow;
+            allowPulse = true;
+        } else {
+            paletteFrom = bowColorPalettes.base;
+            paletteTo = bowColorPalettes.base;
+        }
+
+        const mixArray = (from, to) => from.map((v, i) => lerp(v, to[i], transitionProgress));
+
+        let fill = mixArray(paletteFrom.fill, paletteTo.fill);
+        const stroke = mixArray(paletteFrom.stroke, paletteTo.stroke);
+        let glow = lerp(paletteFrom.glow, paletteTo.glow, transitionProgress);
+        let connector = lerp(paletteFrom.connector, paletteTo.connector, transitionProgress);
+
+        let pulse = 0;
+        if (visiCalcGreenTransitionStarted) {
+            pulse = 0;
+        } else if (allowPulse) {
+            const frequency = allYellowTransformed ? 2.4 : 3.2;
+            const amplitude = allYellowTransformed ? 0.08 : 0.05;
+            pulse = Math.sin(t * frequency) * amplitude;
+        }
+
+        if (pulse !== 0) {
+            fill = fill.map((v) => Math.min(1, Math.max(0, v + pulse * (0.35 + v * 0.25))));
+            glow += Math.max(0, pulse * 0.6);
+            connector += pulse * 0.2;
+        }
+
+        const fillColor = `rgba(${to255(fill[0])}, ${to255(fill[1])}, ${to255(fill[2])}, 1)`;
+        const strokeAlpha = visiCalcGreenTransitionStarted ? 0.9 : 0.85;
+        const strokeColor = `rgba(${to255(stroke[0])}, ${to255(stroke[1])}, ${to255(stroke[2])}, ${strokeAlpha})`;
+
+        let filter;
+        if (visiCalcGreenTransitionStarted) {
+            filter = 'drop-shadow(0 0 6px rgba(0, 255, 0, 0.35)) drop-shadow(0 0 14px rgba(0, 180, 80, 0.22))';
+        } else {
+            const innerRadius = 10 + glow * 12;
+            const outerRadius = 18 + glow * 18;
+            const innerAlpha = 0.45 + glow * 0.35;
+            const outerAlpha = 0.38 + glow * 0.3;
+            filter = `drop-shadow(0 4px ${innerRadius}px rgba(${to255(fill[0])}, ${to255(fill[1])}, ${to255(fill[2])}, ${innerAlpha})) drop-shadow(0 0 ${outerRadius}px rgba(${to255(fill[0])}, ${to255(fill[1])}, ${to255(fill[2])}, ${outerAlpha}))`;
+        }
+
+        const highlight = `rgba(${to255(Math.min(1, fill[0] + 0.08))}, ${to255(Math.min(1, fill[1] + 0.08))}, ${to255(Math.min(1, fill[2] + 0.08))}, 0.95)`;
+        const mid = `rgba(${to255(fill[0])}, ${to255(fill[1])}, ${to255(fill[2])}, 0.88)`;
+        const edge = `rgba(${to255(fill[0] * 0.85)}, ${to255(fill[1] * 0.85)}, ${to255(fill[2] * 0.85)}, 0.78)`;
+        let connectorBg = `radial-gradient(circle at 50% 45%, ${highlight} 0%, ${mid} 45%, ${edge} 100%)`;
+        let connectorShadow = `0 0 ${16 + glow * 14}px rgba(${to255(fill[0])}, ${to255(fill[1])}, ${to255(fill[2])}, ${0.55 + glow * 0.25}), 0 0 ${26 + glow * 20}px rgba(${to255(fill[0])}, ${to255(fill[1])}, ${to255(fill[2])}, ${0.4 + glow * 0.2})`;
+
+        if (visiCalcGreenTransitionStarted) {
+            connectorBg = 'linear-gradient(180deg, rgba(0,255,120,0.9) 0%, rgba(0,180,60,0.85) 100%)';
+            connectorShadow = '0 0 14px rgba(0, 255, 120, 0.4), 0 0 22px rgba(0, 180, 60, 0.25)';
+        }
+
+        const connectorOpacity = skipBtn.classList.contains('rounded-bow') ? Math.max(0, Math.min(1, connector)) : 0;
+        const connectorOpacityStr = connectorOpacity.toFixed(3);
+
+        const appearance = {
+            fill: fillColor,
+            stroke: strokeColor,
+            filter,
+            connectorBg,
+            connectorShadow,
+            connectorOpacity: connectorOpacityStr
+        };
+
+        if (lastBowAppearance.fill !== appearance.fill) {
+            skipBtn.style.setProperty('--bow-fill', appearance.fill);
+        }
+        if (lastBowAppearance.stroke !== appearance.stroke) {
+            skipBtn.style.setProperty('--bow-stroke', appearance.stroke);
+        }
+        if (lastBowAppearance.filter !== appearance.filter) {
+            skipBtn.style.setProperty('--bow-filter', appearance.filter);
+        }
+        if (lastBowAppearance.connectorBg !== appearance.connectorBg) {
+            skipBtn.style.setProperty('--bow-connector-bg', appearance.connectorBg);
+        }
+        if (lastBowAppearance.connectorShadow !== appearance.connectorShadow) {
+            skipBtn.style.setProperty('--bow-connector-shadow', appearance.connectorShadow);
+        }
+        if (lastBowAppearance.connectorOpacity !== appearance.connectorOpacity) {
+            skipBtn.style.setProperty('--bow-connector-opacity', appearance.connectorOpacity);
+        }
+
+        lastBowAppearance = appearance;
+    }
+
     function computeBowAnchorScreenPosition() {
         const cVoxels = letterVoxels.C || [];
         if (!cVoxels.length) return null;
@@ -1981,10 +2216,6 @@
         const skipBtn = document.getElementById('skipBtn');
         if (!skipBtn) return;
 
-        if (!skipBtn.classList.contains('bow-shape')) {
-            return;
-        }
-
         const cVoxels = letterVoxels.C || [];
         if (!cVoxels.length) return;
 
@@ -2002,18 +2233,11 @@
         if (totalCount === 0) return;
 
         const shouldShow = visibleCount > totalCount * 0.25;
-        if (bowVisibleAsVoxel === shouldShow) return;
+        const wasVisible = bowVisibleAsVoxel;
+        setSkipVisibility(shouldShow);
 
-        bowVisibleAsVoxel = shouldShow;
-        if (shouldShow) {
-            skipBtn.classList.remove('voxel-hidden');
-            if (!skipBtn.classList.contains('bow-lock')) {
-                skipBtn.style.pointerEvents = 'auto';
-            }
+        if (shouldShow && !wasVisible && skipBtn.classList.contains('bow-shape')) {
             moveBowToTarget(true);
-        } else {
-            skipBtn.classList.add('voxel-hidden');
-            skipBtn.style.pointerEvents = 'none';
         }
     }
 
@@ -2031,10 +2255,7 @@
         }
 
         skipBtn.classList.remove('hidden');
-        skipBtn.classList.remove('voxel-hidden');
-        if (!skipBtn.classList.contains('bow-lock')) {
-            skipBtn.style.pointerEvents = 'auto';
-        }
+        setSkipVisibility(true, { immediate: true });
         tri1.style.transform = '';
         tri2.style.transform = '';
         skipBtn.classList.add('bow-lock');
@@ -3981,11 +4202,13 @@ RRRR      RRR`;
     function triggerCelliGlitch() {
         if (celliGlitchStarted) return;
         celliGlitchStarted = true;
-        
+
+        setSkipVisibility(false, { flicker: true, immediate: true });
+
         // Play electrical fritz whir/buzz sound
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const now = audioCtx.currentTime;
-        
+
         // Create buzzing electrical sound with multiple oscillators
         const buzz1 = audioCtx.createOscillator();
         const buzz2 = audioCtx.createOscillator();
@@ -5378,7 +5601,10 @@ RRRR      RRR`;
       
       // Update voxels for CELLI animation
       updateVoxels(totalTime, dt);
-      
+
+      // Sync bow visuals with voxel state
+      updateBowAppearance(totalTime);
+
       // Update floating voxels during burst
       updateFloatingVoxels(dt);
       
