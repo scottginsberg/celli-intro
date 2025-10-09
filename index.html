@@ -143,28 +143,33 @@
     .play button::before{ content:"▶"; font-size:14px; opacity:.9; }
     
     /* Skip button */
-    .skip-btn { position:fixed; bottom:20px; left:50%; transform:translate(-50%, 0); pointer-events:auto; cursor:pointer; z-index:70; opacity:0.75; display:flex; align-items:center; justify-content:center; gap:8px; transition: opacity 0.45s ease; --skip-triangle-size:24px; --skip-triangle-height: calc(var(--skip-triangle-size) * 0.866); }
+    .skip-btn { position:fixed; bottom:20px; left:50%; transform:translate(-50%, 0); pointer-events:auto; cursor:pointer; z-index:70; opacity:0.75; display:flex; align-items:center; justify-content:center; gap:0; transition: opacity 0.45s ease; --skip-triangle-size:24px; --skip-triangle-height: calc(var(--skip-triangle-size) * 0.8660254038); }
     .skip-btn:hover { opacity:1; }
     .skip-btn.hidden { display:none; }
     .skip-btn.bow-lock { pointer-events:none; }
     .skip-triangle { position:relative; width:var(--skip-triangle-size); height:var(--skip-triangle-height); display:flex; align-items:center; justify-content:center; transition: transform 0.85s cubic-bezier(0.19, 1, 0.22, 1), filter 0.6s ease; }
     .skip-triangle__inner { width:100%; height:100%; display:flex; filter: drop-shadow(0 2px 6px rgba(255,255,255,0.55)); transform-origin:center; transition: filter 0.6s ease, transform 0.6s ease; }
     .skip-triangle svg { width:100%; height:100%; display:block; }
-    .skip-triangle polygon { fill:#fff; stroke:rgba(255,255,255,0.35); stroke-width:5; stroke-linejoin:round; transition: stroke 0.6s ease, fill 0.6s ease; }
-    .skip-btn:not(.bow-shape) .skip-triangle--left { transform: translateX(calc(var(--skip-triangle-size) * -0.35)); }
-    .skip-btn:not(.bow-shape) .skip-triangle--right { transform: translateX(calc(var(--skip-triangle-size) * 0.35)); }
+    .skip-triangle polygon, .skip-triangle path { fill:#fff; stroke:rgba(255,255,255,0.35); stroke-width:5; stroke-linejoin:round; transition: stroke 0.6s ease, fill 0.6s ease, opacity 0.5s ease; }
+    .skip-triangle path { opacity:0; }
+    .skip-btn:not(.bow-shape) .skip-triangle--left { transform: translateX(calc(var(--skip-triangle-size) * -0.5)); }
+    .skip-btn:not(.bow-shape) .skip-triangle--right { transform: translateX(calc(var(--skip-triangle-size) * 0.5)); }
     .skip-btn.bow-shape { gap:0; opacity:1; --skip-triangle-size:30px; }
     .skip-btn.bow-shape .skip-triangle { position:absolute; top:50%; left:50%; margin:0; }
     .skip-btn.bow-shape .skip-triangle__inner { filter: drop-shadow(0 4px 10px rgba(255,255,255,0.5)) drop-shadow(0 0 18px rgba(255,255,255,0.35)); }
-    .skip-btn.bow-shape .skip-triangle--left { transform: translate(-100%, -50%); }
-    .skip-btn.bow-shape .skip-triangle--right { transform: translate(0%, -50%); }
-    .skip-btn.bow-shape .skip-triangle--left .skip-triangle__inner { transform: scaleX(-1); }
-    .skip-btn.bow-shape::after { content:""; position:absolute; width:14px; height:14px; border-radius:50%; background:rgba(255,255,255,0.88); box-shadow:0 0 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,255,255,0.35); top:50%; left:50%; transform:translate(-50%, -50%); transition: box-shadow 0.6s ease; }
+    .skip-btn.bow-shape .skip-triangle--left { transform: translate(-50%, -50%) translateX(calc(var(--skip-triangle-size) * -0.5)); }
+    .skip-btn.bow-shape .skip-triangle--right { transform: translate(-50%, -50%) translateX(calc(var(--skip-triangle-size) * 0.5)); }
+    .skip-btn.bow-shape .skip-triangle--right .skip-triangle__inner { transform: scaleX(1); }
+    .skip-connector { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:0; height:0; border-radius:0; background:transparent; box-shadow:none; opacity:0; transition: all 0.6s ease; pointer-events:none; }
+    .skip-btn.rounded-bow .skip-triangle polygon { opacity:0; }
+    .skip-btn.rounded-bow .skip-triangle path { opacity:1; }
+    .skip-btn.rounded-bow .skip-connector { width:calc(var(--skip-triangle-size) * 0.6); height:calc(var(--skip-triangle-size) * 0.6); border-radius:calc(var(--skip-triangle-size) * 0.18); background:rgba(255,255,255,0.9); box-shadow:0 0 18px rgba(255,255,255,0.55), 0 0 28px rgba(138,180,255,0.45); opacity:1; }
     .skip-btn.illuminating .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite; }
     .skip-btn.illuminating.bow-shape .skip-triangle--left .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite, skipJiggleLeft 1.6s ease-in-out infinite; }
     .skip-btn.illuminating.bow-shape .skip-triangle--right .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite, skipJiggleRight 1.6s ease-in-out infinite; }
+    .skip-btn.illuminating.rounded-bow .skip-connector { animation: skipCenterPulse 2.2s ease-in-out infinite; }
     .skip-btn.illuminating .skip-triangle polygon { animation: skipFillShimmer 2s ease-in-out infinite, skipOutlinePulse 2.8s ease-in-out infinite; }
-    .skip-btn.illuminating.bow-shape::after { animation: skipCenterPulse 2.2s ease-in-out infinite; }
+    .skip-btn.illuminating.rounded-bow .skip-triangle path { animation: skipFillShimmer 2s ease-in-out infinite, skipOutlinePulse 2.8s ease-in-out infinite; }
 
     @keyframes skipGlowPulse {
       0%, 100% { filter: drop-shadow(0 4px 10px rgba(255,255,255,0.5)) drop-shadow(0 0 18px rgba(138,180,255,0.45)); }
@@ -183,9 +188,9 @@
       60% { stroke:rgba(255,182,46,0.7); stroke-width:6; }
     }
     @keyframes skipJiggleLeft {
-      0%, 100% { transform: scaleX(-1) translate(0, 0); }
-      40% { transform: scaleX(-1) translate(-6%, -6%); }
-      70% { transform: scaleX(-1) translate(4%, 4%); }
+      0%, 100% { transform: translate(0, 0); }
+      40% { transform: translate(-6%, -6%); }
+      70% { transform: translate(4%, 4%); }
     }
     @keyframes skipJiggleRight {
       0%, 100% { transform: translate(0, 0); }
@@ -196,6 +201,14 @@
       0%, 100% { box-shadow:0 0 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,255,255,0.35); }
       45% { box-shadow:0 0 26px rgba(138,180,255,0.75), 0 0 36px rgba(255,255,255,0.6); }
       65% { box-shadow:0 0 24px rgba(255,182,46,0.65), 0 0 34px rgba(255,255,255,0.5); }
+    }
+
+    .visicell-note-line { display:inline-block; min-width:1ch; opacity:0; transform:translateY(6px); animation: visicellNoteSlide 0.6s ease forwards; }
+    .visicell-note-line--1 { animation-delay:0.2s; }
+    .visicell-note-line--2 { animation-delay:0.45s; }
+    @keyframes visicellNoteSlide {
+      from { opacity:0; transform:translateY(10px); }
+      to { opacity:1; transform:translateY(0); }
     }
 
     /* Debug toast */
@@ -245,15 +258,18 @@
     <div id="skipBtn" class="skip-btn hidden" role="button" aria-label="Skip intro" tabindex="0">
         <div class="skip-triangle skip-triangle--left" id="skipTriangle1">
           <div class="skip-triangle__inner">
-            <svg viewBox="0 0 100 86.602" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-              <polygon points="0,43.301 100,0 100,86.602"></polygon>
+            <svg viewBox="0 0 100 86.6025403784" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <polygon points="0,0 0,86.6025403784 100,43.3012701892"></polygon>
+              <path d="M0,12 L0,74.6025403784 Q0,86.6025403784 11.012,81.8342402525 L88.988,48.0696001263 Q100,43.3012701892 88.988,38.5329402521 L11.012,4.7679001263 Q0,0 0,12 Z"></path>
             </svg>
           </div>
         </div>
+        <div class="skip-connector" id="skipConnector" aria-hidden="true"></div>
         <div class="skip-triangle skip-triangle--right" id="skipTriangle2">
           <div class="skip-triangle__inner">
-            <svg viewBox="0 0 100 86.602" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-              <polygon points="0,43.301 100,0 100,86.602"></polygon>
+            <svg viewBox="0 0 100 86.6025403784" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <polygon points="100,0 100,86.6025403784 0,43.3012701892"></polygon>
+              <path d="M100,12 L100,74.6025403784 Q100,86.6025403784 88.988,81.8342402525 L11.012,48.0696001263 Q0,43.3012701892 11.012,38.5329402521 L88.988,4.7679001263 Q100,0 100,12 Z"></path>
             </svg>
           </div>
         </div>
@@ -721,6 +737,7 @@
     let restoredLetters = 0;
     let endSequence = ''; // Track E, N, D input sequence
     let allYellowTransformed = false; // Track if all are yellow and transformed
+    let yellowTransformCompleteCount = 0;
     let endColorState = 'yellow'; // Track current color state: yellow, magenta, cyan, green
     let endColorPrevState = 'yellow'; // Track previous color for transitions
     let endColorTransitionStart = 0; // When color transition started
@@ -735,6 +752,7 @@
     let bowTargetCenter = null;
     let bowAnimationId = 0;
     let bowHasTriggered = false;
+    let pendingRoundedBow = false;
     
     // Text particle system for click interactions
     const textParticles = [];
@@ -1614,6 +1632,10 @@
             skipBtn.classList.add('illuminating');
         }
 
+        yellowTransformCompleteCount = 0;
+        allYellowTransformed = false;
+        const totalVoxels = voxels.length || 1;
+
         voxels.forEach((voxel, idx) => {
             const data = voxel.userData;
             const delay = idx * 15; // Stagger transformation
@@ -1651,8 +1673,14 @@
                                 voxel.material.opacity = 0.9;
                                 data.edges.material.color.setRGB(1.0, 0.9, 0.4);
                                 data.edges.material.opacity = 0.6;
-                                data.backspaceTransformed = true;
-                                allYellowTransformed = true;
+                                if (!data.backspaceTransformed) {
+                                    data.backspaceTransformed = true;
+                                    yellowTransformCompleteCount++;
+                                    if (yellowTransformCompleteCount >= totalVoxels) {
+                                        allYellowTransformed = true;
+                                        activateRoundedBow();
+                                    }
+                                }
                             } else {
                                 // Burst scale and color change
                                 const scale = data.baseScale * THREE.MathUtils.lerp(0.5, 1.15, burstProgress);
@@ -1678,7 +1706,20 @@
             }, delay);
         });
     }
-    
+
+    function activateRoundedBow() {
+        const skipBtn = document.getElementById('skipBtn');
+        if (!skipBtn) return;
+
+        if (!skipBtn.classList.contains('bow-shape')) {
+            pendingRoundedBow = true;
+            return;
+        }
+
+        skipBtn.classList.add('rounded-bow');
+        pendingRoundedBow = false;
+    }
+
     // Transform voxels to magenta-red (E input)
     function transformToMagentaRed() {
         endColorPrevState = endColorState;
@@ -1836,6 +1877,11 @@
         skipBtn.classList.add('bow-lock');
         skipBtn.classList.add('bow-shape');
 
+        if (pendingRoundedBow) {
+            skipBtn.classList.add('rounded-bow');
+            pendingRoundedBow = false;
+        }
+
         bowActive = false;
         bowCurrentCenter = null;
         moveBowToTarget(immediate);
@@ -1877,10 +1923,10 @@
                     <span style="float: right;">LOOMWORKS CELL</span>
                     <div style="clear: both;"></div>
                 </div>
-                    <div style="font-family: 'Courier New', monospace; white-space: pre; line-height: 1.6; font-size: 13px; opacity: 0; animation: fadeInVisi 0.5s ease forwards 0.5s;">
+                <div style="font-family: 'Courier New', monospace; white-space: pre; line-height: 1.6; font-size: 13px; opacity: 0; animation: fadeInVisi 0.5s ease forwards 0.5s;">
 >A1:
      A            B            C            D            E            F
-1  
+1
 2
 3    LOOK
 4
@@ -1899,11 +1945,11 @@
 17
 18
 19
-20   LOOMWORKS
-                </div>
-                <div style="position: absolute; top: 60%; left: 50px; text-align: left; opacity: 0; animation: fadeInVisi 0.6s ease forwards 1.2s; font-size: 13px; color: #0f0; font-family: 'Courier New', monospace; line-height: 1.6;">
-23   >:(<br>
-24   This isn't Stanley Parable. Don't try that again.
+ 20   LOOMWORKS
+ 21
+ 22
+ 23   <span class="visicell-note-line visicell-note-line--1">&gt;:(</span>
+ 24   <span class="visicell-note-line visicell-note-line--2">This isn't Stanley Parable. Don't try that again.</span>
                 </div>
                 <div id="visicellinput" style="position: absolute; bottom: 30px; left: 30px; border-top: 1px solid #0f0; padding-top: 10px; opacity: 0; animation: fadeInVisi 0.3s ease forwards 1s; cursor: text; font-family: 'Courier New', monospace; font-size: 13px; z-index: 100; pointer-events: auto;">
                     <span id="visicellprompt">ENTE<span style="animation: blink 1s step-end infinite;">_</span></span>
@@ -1960,6 +2006,9 @@
     let terminalActive = false;
     let rInfectionStarted = false;
     let rInfectionStage = 0;
+    let promptResetting = false;
+    let promptClearInterval = null;
+    let promptFillInterval = null;
     
     function setupTerminalInput() {
         console.log('⌨️ Terminal input system activated');
@@ -1987,12 +2036,17 @@
         // Handle keyboard input
         document.addEventListener('keydown', (e) => {
             if (!terminalActive) return;
-            
+
+            if (promptResetting) {
+                cancelPromptReset();
+            }
+
             if (e.key === 'Backspace') {
                 e.preventDefault();
                 if (terminalInput.length > 0) {
                     terminalInput = terminalInput.slice(0, -1);
                     updateTerminalPrompt();
+                    evaluateTerminalInputDrift();
                 }
             } else if (e.key === 'Enter') {
                 e.preventDefault();
@@ -2001,10 +2055,14 @@
                 e.preventDefault();
                 terminalInput += e.key.toUpperCase();
                 updateTerminalPrompt();
+                evaluateTerminalInputDrift();
             }
         });
-        
+
         updateTerminalPrompt();
+        if (terminalInput !== 'ENTE') {
+            schedulePromptToEnte({ immediateFill: true });
+        }
     }
     
     function updateTerminalPrompt() {
@@ -2012,7 +2070,84 @@
         if (!promptEl) return;
         promptEl.innerHTML = terminalInput + '<span style="animation: blink 1s step-end infinite;">_</span>';
     }
-    
+
+    const validTerminalCommands = ['ENTER', 'EXIT', 'LEAVE', 'MYHOUSE.WAD', 'OURHOUSE.LOOM', 'MADNESS.LOOM'];
+
+    function cancelPromptReset() {
+        if (promptClearInterval) {
+            clearInterval(promptClearInterval);
+            promptClearInterval = null;
+        }
+        if (promptFillInterval) {
+            clearInterval(promptFillInterval);
+            promptFillInterval = null;
+        }
+        promptResetting = false;
+    }
+
+    function schedulePromptToEnte({ immediateFill = false } = {}) {
+        if (!terminalActive) return;
+
+        cancelPromptReset();
+        promptResetting = true;
+
+        const target = 'ENTE';
+
+        const startFill = () => {
+            let index = 0;
+            promptFillInterval = setInterval(() => {
+                if (!terminalActive) {
+                    cancelPromptReset();
+                    return;
+                }
+
+                if (index < target.length) {
+                    terminalInput += target[index];
+                    index++;
+                    updateTerminalPrompt();
+                } else {
+                    cancelPromptReset();
+                }
+            }, 240);
+        };
+
+        if (!immediateFill && terminalInput.length > 0) {
+            promptClearInterval = setInterval(() => {
+                if (!terminalActive) {
+                    cancelPromptReset();
+                    return;
+                }
+
+                if (terminalInput.length > 0) {
+                    terminalInput = terminalInput.slice(0, -1);
+                    updateTerminalPrompt();
+                } else {
+                    clearInterval(promptClearInterval);
+                    promptClearInterval = null;
+                    startFill();
+                }
+            }, 260);
+        } else {
+            terminalInput = '';
+            updateTerminalPrompt();
+            startFill();
+        }
+    }
+
+    function isValidTerminalPrefix(value) {
+        if (!value) return true;
+        return validTerminalCommands.some(cmd => cmd.startsWith(value));
+    }
+
+    function evaluateTerminalInputDrift() {
+        if (!terminalActive || promptResetting) return;
+        const value = terminalInput.toUpperCase();
+        if (!value || isValidTerminalPrefix(value)) {
+            return;
+        }
+        schedulePromptToEnte();
+    }
+
     function handleTerminalCommand() {
         const cmd = terminalInput.trim();
         const frame = document.getElementById('visicalc-frame');
@@ -2020,15 +2155,27 @@
         
         if (cmd === 'ENTER') {
             triggerRInfection(frame);
+            terminalInput = '';
+            updateTerminalPrompt();
+            schedulePromptToEnte({ immediateFill: true });
         } else if (cmd === 'EXIT') {
             triggerExitCube(frame);
+            terminalInput = '';
+            updateTerminalPrompt();
+            schedulePromptToEnte({ immediateFill: true });
         } else if (cmd === 'LEAVE') {
             triggerLeaveSequence(frame);
+            terminalInput = '';
+            updateTerminalPrompt();
+            schedulePromptToEnte({ immediateFill: true });
         } else if (cmd.toLowerCase() === 'myhouse.wad') {
             terminalResponse(frame, '"Too scary. How about OurHouse.loom?"');
         } else if (cmd.toLowerCase() === 'ourhouse.loom') {
             terminalResponse(frame, '"Huh... Not found. I must have renamed it. I asked my friends Crosby, Stills, Nash AND Young, none of them knew. Maybe wrong band."');
         } else if (cmd.toLowerCase() === 'madness.loom') {
+            terminalInput = '';
+            updateTerminalPrompt();
+            schedulePromptToEnte({ immediateFill: true });
             triggerVictory(frame);
         } else {
             terminalResponse(frame, `Command not recognized: ${cmd}`);
@@ -2041,10 +2188,11 @@
         responseDiv.style.cssText = 'margin-top: 10px; color: #0f0; font-family: "Courier New", monospace; font-size: 13px;';
         responseDiv.textContent = message;
         frame.appendChild(responseDiv);
-        
+
         // Reset input
         terminalInput = '';
         updateTerminalPrompt();
+        schedulePromptToEnte({ immediateFill: true });
     }
     
     let rInfectionProcessing = false;
@@ -2197,14 +2345,11 @@ RRRR            RRRR`;
             
         } else if (rInfectionStage === 4) {
             // Stage 4: Matrix stops and forms large falling R in BLACK (negative space)
-            stopMatrixAndFormBlackR(frame);
-            
-            // Auto-progress to voice
-            setTimeout(() => {
+            stopMatrixAndFormBlackR(frame, () => {
                 rInfectionStage++;
                 progressRInfection(frame);
-            }, 3000);
-            
+            });
+
         } else if (rInfectionStage >= 5) {
             // Stage 5: Text-to-speech "R" (are) on loop
             playTextToSpeechR();
@@ -2254,6 +2399,7 @@ RRRR            RRRR`;
     let matrixInterval = null;
     let matrixDrops = [];
     let matrixOpacity = 0;
+    let cascadeInterval = null;
 
     function wrapAsciiRHint(rHint) {
         if (!rHint) return [];
@@ -2331,8 +2477,85 @@ RRRR            RRRR`;
         return totalDuration;
     }
 
+    function cascadeAllCharacters(frame, onComplete) {
+        if (!frame) {
+            if (typeof onComplete === 'function') onComplete();
+            return;
+        }
+
+        if (cascadeInterval) {
+            clearInterval(cascadeInterval);
+            cascadeInterval = null;
+        }
+
+        let overlay = document.getElementById('frameCascade');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'frameCascade';
+        }
+
+        overlay.style.cssText = 'font-family:"Courier New", monospace; font-size:13px; line-height:1.6; white-space:pre; position:absolute; inset:10px; color:#0f0; text-shadow:0 0 3px #0f0; pointer-events:none; opacity:1; background:transparent;';
+        frame.appendChild(overlay);
+
+        const frameRect = frame.getBoundingClientRect();
+        const columns = Math.max(1, Math.floor(frameRect.width / 8));
+        const rows = Math.max(1, Math.floor(frameRect.height / 21));
+        const matrixChars = 'R∅01';
+        let step = 0;
+        const depth = rows + 18;
+
+        cascadeInterval = setInterval(() => {
+            if (!overlay.isConnected) {
+                clearInterval(cascadeInterval);
+                cascadeInterval = null;
+                if (typeof onComplete === 'function') {
+                    onComplete();
+                }
+                return;
+            }
+
+            let output = '';
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < columns; j++) {
+                    const waveOrigin = (j * 3) % depth;
+                    const progress = step - waveOrigin;
+                    if (progress >= 0 && progress <= rows + 6) {
+                        const intensity = Math.min(1, Math.max(0.1, 1 - progress / (rows + 6)));
+                        if (Math.random() < 0.25 + intensity * 0.5) {
+                            output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                        } else {
+                            output += ' ';
+                        }
+                    } else {
+                        output += ' ';
+                    }
+                }
+                output += '\n';
+            }
+
+            overlay.textContent = output;
+            step++;
+
+            if (step > depth + rows + 6) {
+                clearInterval(cascadeInterval);
+                cascadeInterval = null;
+                overlay.style.transition = 'opacity 0.6s ease';
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                }, 600);
+
+                if (typeof onComplete === 'function') {
+                    onComplete();
+                }
+            }
+        }, 70);
+    }
+
     function startMatrixDataFallOrganic(frame, options = {}) {
-        const { skipIntro = false } = options;
+        const { skipIntro = false, heavyRamp = false } = options;
         const rHint = document.getElementById('rHint');
 
         if (!skipIntro && rHint && rHint.dataset.deconstructed !== '1') {
@@ -2347,7 +2570,9 @@ RRRR            RRRR`;
             rHint.dataset.deconstructed = 'pending';
             animateAsciiRDeconstruction(rHint, () => {
                 rHint.dataset.deconstructed = '1';
-                startMatrixDataFallOrganic(frame, { skipIntro: true });
+                cascadeAllCharacters(frame, () => {
+                    startMatrixDataFallOrganic(frame, { skipIntro: true, heavyRamp: true });
+                });
             });
             return;
         }
@@ -2395,23 +2620,37 @@ RRRR            RRRR`;
         requestAnimationFrame(fadeStep);
 
         let activationProgress = 0;
-        const activationSpeed = 0.0075;
+        const baseActivationSpeed = heavyRamp ? 0.0045 : 0.0075;
+        let heavyDensity = heavyRamp ? 0.12 : 0.55;
+        let heavyGlow = heavyRamp ? 0 : 1;
 
         matrixInterval = setInterval(() => {
-            activationProgress = Math.min(1, activationProgress + activationSpeed);
+            if (heavyRamp) {
+                heavyDensity = Math.min(0.95, heavyDensity + 0.01);
+                heavyGlow = Math.min(1, heavyGlow + 0.008);
+            }
+
+            activationProgress = Math.min(1, activationProgress + baseActivationSpeed + (heavyRamp ? heavyGlow * 0.006 : 0));
             let output = '';
             for (let i = 0; i < rows; i++) {
                 for (let j = 0; j < columns; j++) {
                     const columnThreshold = columns <= 1 ? 1 : j / (columns - 1);
-                    if (columnThreshold > activationProgress) {
+                    const activationCutoff = heavyRamp ? activationProgress * (0.6 + heavyGlow * 0.4) : activationProgress;
+                    if (columnThreshold > activationCutoff) {
                         output += ' ';
                         continue;
                     }
 
                     if (matrixDrops[j] === i) {
-                        output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                        const dropChance = heavyRamp ? 0.25 + heavyGlow * 0.6 : 1;
+                        if (Math.random() < dropChance) {
+                            output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                        } else {
+                            output += ' ';
+                        }
                     } else if (matrixDrops[j] > i && matrixDrops[j] - i < 8) {
-                        output += Math.random() > 0.55 ? matrixChars[Math.floor(Math.random() * matrixChars.length)] : ' ';
+                        const tailChance = heavyRamp ? 0.25 + heavyDensity * 0.6 : 0.55;
+                        output += Math.random() < tailChance ? matrixChars[Math.floor(Math.random() * matrixChars.length)] : ' ';
                     } else {
                         output += ' ';
                     }
@@ -2421,21 +2660,25 @@ RRRR            RRRR`;
             container.textContent = output;
 
             matrixDrops.forEach((drop, idx) => {
-                if (drop > rows && Math.random() > 0.97) {
+                const advance = heavyRamp ? 1 + Math.floor(heavyGlow * 2) : 1;
+                matrixDrops[idx] += advance;
+                const resetThreshold = heavyRamp ? 0.92 - heavyGlow * 0.15 : 0.97;
+                if (matrixDrops[idx] > rows && Math.random() > resetThreshold) {
                     matrixDrops[idx] = 0;
-                } else {
-                    matrixDrops[idx]++;
                 }
             });
 
-            if (activationProgress >= 0.6) {
+            if (heavyRamp) {
+                const bgAlpha = 0.55 + heavyGlow * 0.4;
+                container.style.backgroundColor = `rgba(0, 0, 0, ${bgAlpha.toFixed(2)})`;
+            } else if (activationProgress >= 0.6) {
                 container.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
             }
         }, 60);
 
         console.log('🔄 Organic matrix interval started');
     }
-    function stopMatrixAndFormBlackR(frame) {
+    function stopMatrixAndFormBlackR(frame, onComplete) {
         console.log('🔴 Organically forming BLACK R in negative space');
         
         // DON'T stop the matrix fall - let it continue underneath
@@ -2487,10 +2730,10 @@ RRRR            RRRR`;
             ];
             
             // Function to check if a position is part of the R
-            const isR = (row, col) => {
+            const isRBase = (row, col) => {
                 const relRow = row - startRow;
                 const relCol = col - startCol;
-                if (relRow >= 0 && relRow < rPattern.length && 
+                if (relRow >= 0 && relRow < rPattern.length &&
                     relCol >= 0 && relCol < rPattern[0].length) {
                     return rPattern[relRow][relCol] === 1;
                 }
@@ -2520,7 +2763,7 @@ RRRR            RRRR`;
                 for (let i = 0; i < rows; i++) {
                     for (let j = 0; j < cols; j++) {
                         // Determine if this position should show the R
-                        const shouldBeR = isR(i, j);
+                        const shouldBeR = isRBase(i, j);
                         const random = Math.random();
                         
                         if (shouldBeR) {
@@ -2566,7 +2809,7 @@ RRRR            RRRR`;
                         
                         for (let i = 0; i < rows; i++) {
                             for (let j = 0; j < cols; j++) {
-                                if (isR(i, j)) {
+                                if (isRBase(i, j)) {
                                     // Occasionally skip characters for shimmer effect
                                     if (Math.random() < pulseIntensity) {
                                         output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
@@ -2580,14 +2823,53 @@ RRRR            RRRR`;
                             output += '\n';
                         }
                         container.textContent = output;
-                        
+
                         animFrame++;
-                        if (animFrame > 150) { // Longer animation
+                        if (animFrame > 120) { // Allow shimmer before fall
                             clearInterval(animInterval);
+                            startNegativeRFall();
                         }
                     }, 100); // Slower for more dramatic effect
                 }
             }, 40); // Smoother updates
+
+            function startNegativeRFall() {
+                let offset = 0;
+                const fallInterval = setInterval(() => {
+                    if (!container || !container.isConnected) {
+                        clearInterval(fallInterval);
+                        if (typeof onComplete === 'function') {
+                            onComplete();
+                        }
+                        return;
+                    }
+
+                    let output = '';
+                    for (let i = 0; i < rows; i++) {
+                        for (let j = 0; j < cols; j++) {
+                            if (isRBase(i - offset, j)) {
+                                output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                            } else {
+                                output += ' ';
+                            }
+                        }
+                        output += '\n';
+                    }
+
+                    container.textContent = output;
+                    offset++;
+
+                    if (offset > rows + rHeight) {
+                        clearInterval(fallInterval);
+                        container.textContent = '';
+                        if (typeof onComplete === 'function') {
+                            onComplete();
+                        }
+                    }
+                }, 70);
+            }
+        } else if (typeof onComplete === 'function') {
+            onComplete();
         }
     }
     
