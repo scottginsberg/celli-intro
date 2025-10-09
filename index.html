@@ -149,6 +149,7 @@
     .skip-btn.bow-lock { pointer-events:none; }
     .skip-triangle { position:relative; width:var(--skip-triangle-size); height:var(--skip-triangle-height); display:flex; align-items:center; justify-content:center; transition: transform 0.85s cubic-bezier(0.19, 1, 0.22, 1), filter 0.6s ease; }
     .skip-triangle__inner { width:100%; height:100%; display:flex; filter: drop-shadow(0 2px 6px rgba(255,255,255,0.55)); transform-origin:center; transition: filter 0.6s ease, transform 0.6s ease; }
+    .skip-triangle--right .skip-triangle__inner { transform: scaleX(-1); }
     .skip-triangle svg { width:100%; height:100%; display:block; }
     .skip-triangle polygon, .skip-triangle path { fill:#fff; stroke:rgba(255,255,255,0.35); stroke-width:5; stroke-linejoin:round; transition: stroke 0.6s ease, fill 0.6s ease, opacity 0.5s ease; }
     .skip-triangle path { opacity:0; }
@@ -163,7 +164,7 @@
     .skip-connector { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:0; height:0; border-radius:0; background:transparent; box-shadow:none; opacity:0; transition: all 0.6s ease; pointer-events:none; }
     .skip-btn.rounded-bow .skip-triangle polygon { opacity:0; }
     .skip-btn.rounded-bow .skip-triangle path { opacity:1; }
-    .skip-btn.rounded-bow .skip-connector { width:calc(var(--skip-triangle-size) * 0.6); height:calc(var(--skip-triangle-size) * 0.6); border-radius:calc(var(--skip-triangle-size) * 0.18); background:rgba(255,255,255,0.9); box-shadow:0 0 18px rgba(255,255,255,0.55), 0 0 28px rgba(138,180,255,0.45); opacity:1; }
+    .skip-btn.rounded-bow .skip-connector { width:calc(var(--skip-triangle-size) * 0.45); height:calc(var(--skip-triangle-size) * 0.45); border-radius:calc(var(--skip-triangle-size) * 0.12); background:rgba(255,255,255,0.92); box-shadow:0 0 14px rgba(255,255,255,0.55), 0 0 20px rgba(138,180,255,0.45); opacity:1; }
     .skip-btn.illuminating .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite; }
     .skip-btn.illuminating.bow-shape .skip-triangle--left .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite, skipJiggleLeft 1.6s ease-in-out infinite; }
     .skip-btn.illuminating.bow-shape .skip-triangle--right .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite, skipJiggleRight 1.6s ease-in-out infinite; }
@@ -1951,7 +1952,7 @@
  23   <span class="visicell-note-line visicell-note-line--1">&gt;:(</span>
  24   <span class="visicell-note-line visicell-note-line--2">This isn't Stanley Parable. Don't try that again.</span>
                 </div>
-                <div id="visicellinput" style="position: absolute; bottom: 30px; left: 30px; border-top: 1px solid #0f0; padding-top: 10px; opacity: 0; animation: fadeInVisi 0.3s ease forwards 1s; cursor: text; font-family: 'Courier New', monospace; font-size: 13px; z-index: 100; pointer-events: auto;">
+                <div id="visicellinput" style="position: absolute; top: 24px; right: 36px; left: auto; bottom: auto; border-top: 1px solid #0f0; padding-top: 10px; opacity: 0; animation: fadeInVisi 0.3s ease forwards 1s; cursor: text; font-family: 'Courier New', monospace; font-size: 13px; z-index: 100; pointer-events: auto; text-align: right;">
                     <span id="visicellprompt">ENTE<span style="animation: blink 1s step-end infinite;">_</span></span>
                 </div>
             </div>
@@ -2397,9 +2398,10 @@ RRRR            RRRR`;
     }
     
     let matrixInterval = null;
-    let matrixDrops = [];
+    let matrixColumns = [];
     let matrixOpacity = 0;
     let cascadeInterval = null;
+    let matrixSeedCache = null;
 
     function wrapAsciiRHint(rHint) {
         if (!rHint) return [];
@@ -2432,6 +2434,38 @@ RRRR            RRRR`;
 
         rHint.dataset.wrapped = '1';
         return Array.from(rHint.querySelectorAll('.r-char'));
+    }
+
+    function captureMatrixSeeds(frame) {
+        const rHint = document.getElementById('rHint');
+        if (!rHint) return;
+
+        const spans = wrapAsciiRHint(rHint);
+        if (!spans.length) return;
+
+        const frameRect = frame.getBoundingClientRect();
+        const seeds = [];
+
+        spans.forEach((span) => {
+            if (span.dataset.solid !== '1') return;
+            const rect = span.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const normalizedX = (centerX - frameRect.left) / frameRect.width;
+            const normalizedY = (centerY - frameRect.top) / frameRect.height;
+            seeds.push({
+                x: Math.min(0.999, Math.max(0, normalizedX)),
+                y: Math.min(0.999, Math.max(0, normalizedY)),
+                char: span.textContent && span.textContent.trim() ? span.textContent.trim()[0] : 'R'
+            });
+        });
+
+        if (seeds.length) {
+            matrixSeedCache = {
+                seeds,
+                capturedAt: performance.now()
+            };
+        }
     }
 
     function animateAsciiRDeconstruction(rHint, onComplete) {
@@ -2567,6 +2601,7 @@ RRRR            RRRR`;
                 rHint.classList.add('glow');
             }
 
+            captureMatrixSeeds(frame);
             rHint.dataset.deconstructed = 'pending';
             animateAsciiRDeconstruction(rHint, () => {
                 rHint.dataset.deconstructed = '1';
@@ -2585,17 +2620,27 @@ RRRR            RRRR`;
         const rows = Math.max(1, Math.floor(frameRect.height / 21));
 
         console.log(`📐 Matrix dimensions: ${columns} cols x ${rows} rows (frame: ${frameRect.width}x${frameRect.height})`);
-        matrixDrops = Array(columns).fill(0).map(() => Math.floor(Math.random() * rows));
+
+        const seedsByColumn = Array.from({ length: columns }, () => []);
+        if (matrixSeedCache && Array.isArray(matrixSeedCache.seeds)) {
+            matrixSeedCache.seeds.forEach(({ x, y, char }) => {
+                const col = Math.min(columns - 1, Math.max(0, Math.floor(x * columns)));
+                const row = Math.min(rows - 1, Math.max(0, Math.floor(y * rows)));
+                seedsByColumn[col].push({ row, char });
+            });
+            seedsByColumn.forEach((list) => list.sort((a, b) => a.row - b.row));
+        }
 
         let container = document.getElementById('matrixContainer');
+        const containerStyles = 'font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6; color: #0f0; text-shadow: 0 0 2px #0f0; white-space: pre; overflow: hidden; width: calc(100% - 20px); height: calc(100% - 20px); position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 50; background: transparent; margin: 0; padding: 0; opacity: 0; transition: opacity 1s ease, background-color 1.5s ease;';
         if (!container) {
             container = document.createElement('div');
             container.id = 'matrixContainer';
-            container.style.cssText = 'font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6; color: #0f0; text-shadow: 0 0 2px #0f0; white-space: pre; overflow: hidden; width: calc(100% - 20px); height: calc(100% - 20px); position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 50; background: transparent; margin: 0; padding: 0; opacity: 0; transition: opacity 1s ease, background-color 1.5s ease;';
+            container.style.cssText = containerStyles;
             frame.appendChild(container);
             console.log('✅ Matrix container created (within frame, respecting border)');
         } else {
-            container.style.cssText = 'font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6; color: #0f0; text-shadow: 0 0 2px #0f0; white-space: pre; overflow: hidden; width: calc(100% - 20px); height: calc(100% - 20px); position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 50; background: transparent; margin: 0; padding: 0; opacity: 0; transition: opacity 1s ease, background-color 1.5s ease;';
+            container.style.cssText = containerStyles;
             console.log('♻️ Matrix container reset (within frame, respecting border)');
         }
 
@@ -2611,7 +2656,7 @@ RRRR            RRRR`;
             const elapsed = performance.now() - fadeStart;
             const progress = Math.min(elapsed / fadeDuration, 1);
             const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-            matrixOpacity = 0.15 + eased * 0.85;
+            matrixOpacity = 0.18 + eased * 0.82;
             container.style.opacity = matrixOpacity.toString();
             if (progress < 1) {
                 requestAnimationFrame(fadeStep);
@@ -2619,52 +2664,145 @@ RRRR            RRRR`;
         };
         requestAnimationFrame(fadeStep);
 
+        const baseTail = heavyRamp ? 11 : 8;
+        const createColumnState = (seedList = [], columnIndex) => {
+            const queue = seedList.slice();
+            const firstSeed = queue.shift();
+            const shimmerPhase = Math.random() * Math.PI * 2;
+            if (firstSeed) {
+                return {
+                    columnIndex,
+                    head: firstSeed.row,
+                    originalSeedRow: firstSeed.row,
+                    velocity: 0.18 + Math.random() * 0.08,
+                    maxVelocity: heavyRamp ? 1.55 : 1.05,
+                    tail: baseTail + Math.floor(Math.random() * 4),
+                    hold: 6 + Math.floor(Math.random() * 6),
+                    queue,
+                    seededChar: firstSeed.char || 'R',
+                    ambient: false,
+                    shimmerPhase
+                };
+            }
+
+            return {
+                columnIndex,
+                head: -Math.random() * rows * 0.8,
+                originalSeedRow: null,
+                velocity: 0.55 + Math.random() * 0.3,
+                maxVelocity: heavyRamp ? 1.45 : 1.0,
+                tail: baseTail - 2 + Math.floor(Math.random() * 4),
+                hold: 0,
+                queue: [],
+                seededChar: null,
+                ambient: true,
+                shimmerPhase
+            };
+        };
+
+        matrixColumns = Array.from({ length: columns }, (_, columnIndex) => createColumnState(seedsByColumn[columnIndex], columnIndex));
+
+        const randomMatrixChar = () => matrixChars[Math.floor(Math.random() * matrixChars.length)];
+
+        const columnChar = (state, rowIndex, activationCutoff) => {
+            if (!state) return ' ';
+
+            const headPos = state.head;
+            const distance = headPos - rowIndex;
+            const tailLength = Math.max(1, state.tail);
+
+            if (distance > -0.55 && distance < 0.55) {
+                return state.seededChar && state.hold > 0 ? state.seededChar : randomMatrixChar();
+            }
+
+            if (distance >= 0.55 && distance <= tailLength + 0.65) {
+                const depth = (distance - 0.55) / tailLength;
+                const intensity = Math.max(0, 1 - depth);
+                const density = heavyRamp ? 0.35 + intensity * 0.55 : 0.22 + intensity * 0.5;
+                if (Math.random() < density) {
+                    return randomMatrixChar();
+                }
+            }
+
+            if (state.ambient && activationCutoff > 0.35) {
+                const wave = 0.05 * Math.sin(rowIndex * 0.25 + state.shimmerPhase + activationCutoff * Math.PI * 2);
+                const ambientBase = heavyRamp ? 0.18 + activationCutoff * 0.45 : 0.08 + activationCutoff * 0.3;
+                if (Math.random() < ambientBase + wave) {
+                    return randomMatrixChar();
+                }
+            }
+
+            return ' ';
+        };
+
         let activationProgress = 0;
         const baseActivationSpeed = heavyRamp ? 0.0045 : 0.0075;
-        let heavyDensity = heavyRamp ? 0.12 : 0.55;
         let heavyGlow = heavyRamp ? 0 : 1;
 
         matrixInterval = setInterval(() => {
             if (heavyRamp) {
-                heavyDensity = Math.min(0.95, heavyDensity + 0.01);
                 heavyGlow = Math.min(1, heavyGlow + 0.008);
             }
 
             activationProgress = Math.min(1, activationProgress + baseActivationSpeed + (heavyRamp ? heavyGlow * 0.006 : 0));
-            let output = '';
+            const activationCutoff = heavyRamp ? activationProgress * (0.6 + heavyGlow * 0.4) : activationProgress;
+
+            const lines = [];
             for (let i = 0; i < rows; i++) {
+                let line = '';
                 for (let j = 0; j < columns; j++) {
                     const columnThreshold = columns <= 1 ? 1 : j / (columns - 1);
-                    const activationCutoff = heavyRamp ? activationProgress * (0.6 + heavyGlow * 0.4) : activationProgress;
                     if (columnThreshold > activationCutoff) {
-                        output += ' ';
+                        line += ' ';
                         continue;
                     }
 
-                    if (matrixDrops[j] === i) {
-                        const dropChance = heavyRamp ? 0.25 + heavyGlow * 0.6 : 1;
-                        if (Math.random() < dropChance) {
-                            output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
-                        } else {
-                            output += ' ';
-                        }
-                    } else if (matrixDrops[j] > i && matrixDrops[j] - i < 8) {
-                        const tailChance = heavyRamp ? 0.25 + heavyDensity * 0.6 : 0.55;
-                        output += Math.random() < tailChance ? matrixChars[Math.floor(Math.random() * matrixChars.length)] : ' ';
+                    line += columnChar(matrixColumns[j], i, activationCutoff);
+                }
+                lines.push(line);
+            }
+            container.textContent = lines.join('\n');
+
+            matrixColumns.forEach((state, index) => {
+                if (!state) return;
+
+                if (state.hold > 0) {
+                    state.hold -= 1;
+                } else {
+                    const acceleration = heavyRamp ? 0.06 + Math.random() * 0.02 : 0.035 + Math.random() * 0.015;
+                    state.head += state.velocity;
+                    state.velocity = Math.min(state.maxVelocity, state.velocity + acceleration);
+                }
+
+                if (!state.ambient && state.seededChar && state.hold <= 0 && state.originalSeedRow !== null && state.head - state.originalSeedRow > state.tail * 0.6) {
+                    state.seededChar = null;
+                }
+
+                if (state.head - state.tail > rows + 2) {
+                    if (state.queue.length) {
+                        const nextSeed = state.queue.shift();
+                        state.head = nextSeed.row;
+                        state.originalSeedRow = nextSeed.row;
+                        state.velocity = 0.2 + Math.random() * 0.08;
+                        state.maxVelocity = heavyRamp ? 1.55 : 1.05;
+                        state.tail = baseTail + Math.floor(Math.random() * 4);
+                        state.hold = 4 + Math.floor(Math.random() * 4);
+                        state.seededChar = nextSeed.char || 'R';
+                        state.ambient = false;
                     } else {
-                        output += ' ';
+                        state.head = -Math.random() * rows * 0.6;
+                        state.originalSeedRow = null;
+                        state.velocity = 0.55 + Math.random() * 0.25;
+                        state.maxVelocity = heavyRamp ? 1.45 : 1.0;
+                        state.tail = baseTail - 2 + Math.floor(Math.random() * 4);
+                        state.hold = 0;
+                        state.seededChar = null;
+                        state.ambient = true;
                     }
                 }
-                output += '\n';
-            }
-            container.textContent = output;
 
-            matrixDrops.forEach((drop, idx) => {
-                const advance = heavyRamp ? 1 + Math.floor(heavyGlow * 2) : 1;
-                matrixDrops[idx] += advance;
-                const resetThreshold = heavyRamp ? 0.92 - heavyGlow * 0.15 : 0.97;
-                if (matrixDrops[idx] > rows && Math.random() > resetThreshold) {
-                    matrixDrops[idx] = 0;
+                if (state.ambient && activationCutoff < 0.4 && index % 2 === 0) {
+                    state.head += 0.2 * Math.sin(activationProgress * Math.PI * 0.5 + state.shimmerPhase);
                 }
             });
 
@@ -2672,7 +2810,7 @@ RRRR            RRRR`;
                 const bgAlpha = 0.55 + heavyGlow * 0.4;
                 container.style.backgroundColor = `rgba(0, 0, 0, ${bgAlpha.toFixed(2)})`;
             } else if (activationProgress >= 0.6) {
-                container.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+                container.style.backgroundColor = 'rgba(0, 0, 0, 0.88)';
             }
         }, 60);
 
@@ -2680,33 +2818,25 @@ RRRR            RRRR`;
     }
     function stopMatrixAndFormBlackR(frame, onComplete) {
         console.log('🔴 Organically forming BLACK R in negative space');
-        
-        // DON'T stop the matrix fall - let it continue underneath
-        // Instead, gradually transform it into the R shape
-        
+
         const matrixChars = 'R∅01';
-        
-        // Calculate dimensions based on frame size (not full viewport)
         const frameRect = frame.getBoundingClientRect();
         const cols = Math.floor(frameRect.width / 8);
         const rows = Math.floor(frameRect.height / 21);
-        
-        // Create larger R pattern centered in the grid
+
         const rWidth = 30;
         const rHeight = 19;
         const startCol = Math.floor((cols - rWidth) / 2);
         const startRow = Math.floor((rows - rHeight) / 2);
-        
+
         console.log(`🎨 R dimensions: ${rWidth}x${rHeight} at col ${startCol}, row ${startRow} (frame: ${cols}x${rows})`);
-        
+
         const container = document.getElementById('matrixContainer');
         if (container) {
-            // Ensure full opacity and black background - polished transition
-            container.style.backgroundColor = 'rgba(0, 0, 0, 0.98)'; // Keep border slightly visible
+            container.style.backgroundColor = 'rgba(0, 0, 0, 0.98)';
             container.style.opacity = '1';
-            container.style.textShadow = '0 0 4px #0f0, 0 0 8px #0f0'; // Enhanced glow
-            
-            // R shape pattern (1 = filled with green chars, 0 = empty/black space)
+            container.style.textShadow = '0 0 4px #0f0, 0 0 8px #0f0';
+
             const rPattern = [
                 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -2728,56 +2858,49 @@ RRRR            RRRR`;
                 [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0],
                 [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0],
             ];
-            
-            // Function to check if a position is part of the R
+
             const isRBase = (row, col) => {
                 const relRow = row - startRow;
                 const relCol = col - startCol;
-                if (relRow >= 0 && relRow < rPattern.length &&
-                    relCol >= 0 && relCol < rPattern[0].length) {
+                if (relRow >= 0 && relRow < rPattern.length && relCol >= 0 && relCol < rPattern[0].length) {
                     return rPattern[relRow][relCol] === 1;
                 }
                 return false;
             };
-            
-            // Stop the falling matrix interval
+
             if (matrixInterval) {
                 clearInterval(matrixInterval);
                 matrixInterval = null;
             }
-            
-            // AWESOME organic transition from matrix fall to R shape
+
+            const randomMatrixChar = () => matrixChars[Math.floor(Math.random() * matrixChars.length)];
+
             let transitionProgress = 0;
-            const transitionDuration = 80; // Longer for more dramatic effect
-            
+            const transitionDuration = 80;
+
             const formRInterval = setInterval(() => {
                 transitionProgress++;
                 const progress = Math.min(transitionProgress / transitionDuration, 1);
-                
-                // Eased progress for smoother animation
-                const easedProgress = progress < 0.5 
-                    ? 4 * progress * progress * progress 
+                const easedProgress = progress < 0.5
+                    ? 4 * progress * progress * progress
                     : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-                
-                let output = '';
+
+                const lines = [];
                 for (let i = 0; i < rows; i++) {
+                    let line = '';
                     for (let j = 0; j < cols; j++) {
-                        // Determine if this position should show the R
                         const shouldBeR = isRBase(i, j);
                         const random = Math.random();
-                        
+
                         if (shouldBeR) {
-                            // R area: gradually consolidate matrix characters with wave effect
-                            const distanceFromCenter = Math.abs(i - startRow - rHeight/2) + Math.abs(j - startCol - rWidth/2);
+                            const distanceFromCenter = Math.abs(i - startRow - rHeight / 2) + Math.abs(j - startCol - rWidth / 2);
                             const localProgress = Math.max(0, easedProgress - (distanceFromCenter * 0.01));
-                            
                             if (random < localProgress || easedProgress > 0.6) {
-                                output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                                line += randomMatrixChar();
                             } else {
-                                output += random < 0.3 ? matrixChars[Math.floor(Math.random() * matrixChars.length)] : ' ';
+                                line += random < 0.3 ? randomMatrixChar() : ' ';
                             }
                         } else {
-                            // Non-R area: gradually clear to black with ripple effect
                             const distanceFromR = Math.min(
                                 Math.abs(i - startRow),
                                 Math.abs(i - (startRow + rHeight)),
@@ -2785,94 +2908,169 @@ RRRR            RRRR`;
                                 Math.abs(j - (startCol + rWidth))
                             );
                             const clearProgress = Math.min(easedProgress + (distanceFromR * 0.005), 1);
-                            
+
                             if (random > clearProgress) {
-                                output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                                line += randomMatrixChar();
                             } else {
-                                output += ' ';
+                                line += ' ';
                             }
                         }
                     }
-                    output += '\n';
+                    lines.push(line);
                 }
-                container.textContent = output;
-                
-                // After transition, animate the R characters with polish
+
+                container.textContent = lines.join('\n');
+
                 if (transitionProgress >= transitionDuration) {
                     clearInterval(formRInterval);
-                    
-                    // Continuously animate R characters with subtle pulsing
+
                     let animFrame = 0;
-                    const animInterval = setInterval(() => {
-                        let output = '';
-                        const pulseIntensity = Math.sin(animFrame * 0.1) * 0.3 + 0.7; // Subtle pulse
-                        
+                    const shimmerInterval = setInterval(() => {
+                        const pulseIntensity = Math.sin(animFrame * 0.1) * 0.3 + 0.7;
+                        const shimmerLines = [];
                         for (let i = 0; i < rows; i++) {
+                            let line = '';
                             for (let j = 0; j < cols; j++) {
                                 if (isRBase(i, j)) {
-                                    // Occasionally skip characters for shimmer effect
                                     if (Math.random() < pulseIntensity) {
-                                        output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                                        line += randomMatrixChar();
                                     } else {
-                                        output += ' ';
+                                        line += ' ';
                                     }
                                 } else {
-                                    output += ' ';
+                                    line += ' ';
                                 }
                             }
-                            output += '\n';
+                            shimmerLines.push(line);
                         }
-                        container.textContent = output;
-
+                        container.textContent = shimmerLines.join('\n');
                         animFrame++;
-                        if (animFrame > 120) { // Allow shimmer before fall
-                            clearInterval(animInterval);
+                        if (animFrame > 120) {
+                            clearInterval(shimmerInterval);
                             startNegativeRFall();
                         }
-                    }, 100); // Slower for more dramatic effect
+                    }, 100);
                 }
-            }, 40); // Smoother updates
+            }, 40);
 
             function startNegativeRFall() {
-                let offset = 0;
-                const fallInterval = setInterval(() => {
-                    if (!container || !container.isConnected) {
-                        clearInterval(fallInterval);
-                        if (typeof onComplete === 'function') {
-                            onComplete();
-                        }
-                        return;
-                    }
+                const particles = [];
+                const ambientStreams = Array.from({ length: cols }, () => ({
+                    head: -Math.random() * rows * 0.6,
+                    velocity: 0.35 + Math.random() * 0.25,
+                    tail: 5 + Math.floor(Math.random() * 5),
+                    density: 0.4 + Math.random() * 0.3,
+                }));
+                const gravity = 0.045;
+                const maxVelocity = 1.6;
+                const trailLength = 8;
+                const randomPhase = () => Math.random() * Math.PI * 2;
 
-                    let output = '';
-                    for (let i = 0; i < rows; i++) {
-                        for (let j = 0; j < cols; j++) {
-                            if (isRBase(i - offset, j)) {
-                                output += matrixChars[Math.floor(Math.random() * matrixChars.length)];
-                            } else {
-                                output += ' ';
+                for (let i = 0; i < rows; i++) {
+                    for (let j = 0; j < cols; j++) {
+                        if (isRBase(i, j)) {
+                            particles.push({
+                                x: j + 0.5,
+                                y: i + Math.random() * 0.3,
+                                vy: 0.02 + Math.random() * 0.06,
+                                hold: Math.floor(Math.random() * 6),
+                                phase: randomPhase(),
+                                trail: [],
+                                settled: false
+                            });
+                        }
+                    }
+                }
+
+                let fallFrame = 0;
+                let completionNotified = false;
+                let ambientHold = 260;
+
+                const update = () => {
+                    fallFrame++;
+                    const grid = Array.from({ length: rows }, () => Array(cols).fill(' '));
+
+                    ambientStreams.forEach((stream, col) => {
+                        stream.head += stream.velocity;
+                        if (stream.head > rows + stream.tail + 4) {
+                            stream.head = -Math.random() * rows * 0.6;
+                            stream.velocity = 0.35 + Math.random() * 0.3;
+                            stream.tail = 4 + Math.floor(Math.random() * 6);
+                            stream.density = 0.35 + Math.random() * 0.4;
+                        }
+                        const headRow = Math.floor(stream.head);
+                        for (let t = 0; t <= stream.tail; t++) {
+                            const r = headRow - t;
+                            if (r >= 0 && r < rows) {
+                                const intensity = 1 - t / (stream.tail + 1);
+                                const chance = stream.density * intensity;
+                                if (Math.random() < chance) {
+                                    grid[r][col] = randomMatrixChar();
+                                }
                             }
                         }
-                        output += '\n';
-                    }
+                    });
 
-                    container.textContent = output;
-                    offset++;
+                    let activeCount = 0;
+                    particles.forEach((particle) => {
+                        if (particle.settled) return;
+                        activeCount++;
 
-                    if (offset > rows + rHeight) {
-                        clearInterval(fallInterval);
-                        container.textContent = '';
+                        if (particle.hold > 0) {
+                            particle.hold -= 1;
+                        } else {
+                            particle.vy = Math.min(maxVelocity, particle.vy + gravity + Math.random() * 0.02);
+                            particle.y += particle.vy;
+                            particle.x += Math.sin(fallFrame * 0.08 + particle.phase) * 0.05;
+                            particle.x = Math.max(0.2, Math.min(cols - 0.2, particle.x));
+                        }
+
+                        const col = Math.floor(particle.x);
+                        const row = Math.floor(particle.y);
+
+                        particle.trail.unshift({ row, col });
+                        particle.trail = particle.trail.filter((seg, idx) => idx < trailLength && seg.row >= 0 && seg.row < rows && seg.col >= 0 && seg.col < cols);
+
+                        particle.trail.forEach((seg, idx) => {
+                            const intensity = Math.max(0, 1 - idx / trailLength);
+                            if (seg.row >= 0 && seg.row < rows && seg.col >= 0 && seg.col < cols) {
+                                if (grid[seg.row][seg.col] === ' ' || Math.random() < 0.45 + intensity * 0.4) {
+                                    grid[seg.row][seg.col] = randomMatrixChar();
+                                }
+                            }
+                        });
+
+                        if (row >= rows) {
+                            particle.settled = true;
+                        }
+                    });
+
+                    container.textContent = grid.map((row) => row.join('')).join('\n');
+
+                    if (!completionNotified && activeCount === 0) {
+                        completionNotified = true;
                         if (typeof onComplete === 'function') {
                             onComplete();
                         }
                     }
-                }, 70);
+
+                    if (completionNotified) {
+                        ambientHold -= 1;
+                        if (ambientHold <= 0) {
+                            return;
+                        }
+                    }
+
+                    requestAnimationFrame(update);
+                };
+
+                requestAnimationFrame(update);
             }
         } else if (typeof onComplete === 'function') {
             onComplete();
         }
     }
-    
+
     function triggerExitCube(frame) {
         console.log('🔲 EXIT CUBE');
         // Keep terminal active - don't disable it
