@@ -6,7 +6,7 @@
   <title>Tri‑Trail Evolved • three.js</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@100;300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto+Mono:wght@100;300&display=swap" rel="stylesheet">
   <style>
     :root { --bg: #000; --fg: #e6e6e6; --accent:#8ab4ff; }
     html, body { margin:0; height:100%; background:#000; overflow:hidden; }
@@ -72,12 +72,12 @@
     /* Input prompt inside doorway */
     .prompt-container { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 1s ease-in 1.5s; pointer-events:none; user-select:none; -webkit-user-select:none; }
     .doorway.open .prompt-container { opacity:1; pointer-events:auto; cursor:text; }
-    .prompt { 
+    .prompt {
       position: relative;
-      font-family: 'Roboto Mono', ui-monospace, monospace; 
+      font-family: 'Press Start 2P', 'Roboto Mono', ui-monospace, monospace;
       font-size: clamp(12px, 3.5vw, 36px);
-      font-weight:100; 
-      color:#000; 
+      font-weight:400;
+      color:#000;
       letter-spacing:0.08em;
       z-index: 2;
       white-space: nowrap;
@@ -89,9 +89,9 @@
       left: 0;
       top: 130%;
       width: 100%;
-      font-family: 'Roboto Mono', ui-monospace, monospace; 
+      font-family: 'Press Start 2P', 'Roboto Mono', ui-monospace, monospace;
       font-size: clamp(12px, 3.5vw, 36px);
-      font-weight: 100;
+      font-weight: 400;
       color: rgba(0, 0, 0, 0.95);
       letter-spacing: 0.08em;
       transform: scaleY(-1.4) perspective(150px) rotateX(68deg);
@@ -143,19 +143,60 @@
     .play button::before{ content:"▶"; font-size:14px; opacity:.9; }
     
     /* Skip button */
-    .skip-btn { position:fixed; bottom:20px; left:50%; transform:translate(-50%, 0); pointer-events:auto; cursor:pointer; z-index:70; opacity:0.75; display:flex; align-items:center; justify-content:center; gap:8px; transition: opacity 0.45s ease; }
+    .skip-btn { position:fixed; bottom:20px; left:50%; transform:translate(-50%, 0); pointer-events:auto; cursor:pointer; z-index:70; opacity:0.75; display:flex; align-items:center; justify-content:center; gap:8px; transition: opacity 0.45s ease; --skip-triangle-size:24px; --skip-triangle-height: calc(var(--skip-triangle-size) * 0.866); }
     .skip-btn:hover { opacity:1; }
     .skip-btn.hidden { display:none; }
     .skip-btn.bow-lock { pointer-events:none; }
-    .skip-triangle { width:22px; height:22px; background:#fff; clip-path: polygon(0% 50%, 100% 0%, 100% 100%); filter: drop-shadow(0 2px 6px rgba(255,255,255,0.55)); transition: transform 0.85s cubic-bezier(0.19, 1, 0.22, 1), filter 0.6s ease; }
-    .skip-triangle--right { transform: translateX(4px); }
-    .skip-btn.bow-shape { gap:0; opacity:1; }
-    .skip-btn.bow-shape .skip-triangle { position:absolute; top:50%; left:50%; margin:0; filter: drop-shadow(0 4px 10px rgba(255,255,255,0.5)) drop-shadow(0 0 16px rgba(255,255,255,0.35)); }
-    .skip-btn.bow-shape .skip-triangle--left { transform-origin:80% 50%; transform: translate(-68%, -52%) rotate(-38deg) scale(1.55); }
-    .skip-btn.bow-shape .skip-triangle--right { transform-origin:20% 50%; transform: translate(-32%, -52%) rotate(38deg) scale(1.55); }
-    .skip-btn.bow-shape::after { content:""; position:absolute; width:12px; height:12px; border-radius:50%; background:rgba(255,255,255,0.85); box-shadow:0 0 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,255,255,0.35); top:50%; left:50%; transform:translate(-50%, -50%); }
-    .skip-btn:not(.bow-shape) .skip-triangle--left { transform: translateX(-6px); }
-    .skip-btn:not(.bow-shape) .skip-triangle--right { transform: translateX(6px); }
+    .skip-triangle { position:relative; width:var(--skip-triangle-size); height:var(--skip-triangle-height); display:flex; align-items:center; justify-content:center; transition: transform 0.85s cubic-bezier(0.19, 1, 0.22, 1), filter 0.6s ease; }
+    .skip-triangle__inner { width:100%; height:100%; display:flex; filter: drop-shadow(0 2px 6px rgba(255,255,255,0.55)); transform-origin:center; transition: filter 0.6s ease, transform 0.6s ease; }
+    .skip-triangle svg { width:100%; height:100%; display:block; }
+    .skip-triangle polygon { fill:#fff; stroke:rgba(255,255,255,0.35); stroke-width:5; stroke-linejoin:round; transition: stroke 0.6s ease, fill 0.6s ease; }
+    .skip-btn:not(.bow-shape) .skip-triangle--left { transform: translateX(calc(var(--skip-triangle-size) * -0.35)); }
+    .skip-btn:not(.bow-shape) .skip-triangle--right { transform: translateX(calc(var(--skip-triangle-size) * 0.35)); }
+    .skip-btn.bow-shape { gap:0; opacity:1; --skip-triangle-size:30px; }
+    .skip-btn.bow-shape .skip-triangle { position:absolute; top:50%; left:50%; margin:0; }
+    .skip-btn.bow-shape .skip-triangle__inner { filter: drop-shadow(0 4px 10px rgba(255,255,255,0.5)) drop-shadow(0 0 18px rgba(255,255,255,0.35)); }
+    .skip-btn.bow-shape .skip-triangle--left { transform: translate(-100%, -50%); }
+    .skip-btn.bow-shape .skip-triangle--right { transform: translate(0%, -50%); }
+    .skip-btn.bow-shape .skip-triangle--left .skip-triangle__inner { transform: scaleX(-1); }
+    .skip-btn.bow-shape::after { content:""; position:absolute; width:14px; height:14px; border-radius:50%; background:rgba(255,255,255,0.88); box-shadow:0 0 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,255,255,0.35); top:50%; left:50%; transform:translate(-50%, -50%); transition: box-shadow 0.6s ease; }
+    .skip-btn.illuminating .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite; }
+    .skip-btn.illuminating.bow-shape .skip-triangle--left .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite, skipJiggleLeft 1.6s ease-in-out infinite; }
+    .skip-btn.illuminating.bow-shape .skip-triangle--right .skip-triangle__inner { animation: skipGlowPulse 2.4s ease-in-out infinite, skipJiggleRight 1.6s ease-in-out infinite; }
+    .skip-btn.illuminating .skip-triangle polygon { animation: skipFillShimmer 2s ease-in-out infinite, skipOutlinePulse 2.8s ease-in-out infinite; }
+    .skip-btn.illuminating.bow-shape::after { animation: skipCenterPulse 2.2s ease-in-out infinite; }
+
+    @keyframes skipGlowPulse {
+      0%, 100% { filter: drop-shadow(0 4px 10px rgba(255,255,255,0.5)) drop-shadow(0 0 18px rgba(138,180,255,0.45)); }
+      45% { filter: drop-shadow(0 6px 18px rgba(255,255,255,0.75)) drop-shadow(0 0 26px rgba(138,180,255,0.7)); }
+      55% { filter: drop-shadow(0 5px 14px rgba(255,255,255,0.65)) drop-shadow(0 0 22px rgba(255,182,46,0.55)); }
+    }
+    @keyframes skipFillShimmer {
+      0%, 100% { fill:#ffffff; }
+      25% { fill:#f5f9ff; }
+      50% { fill:#ffffff; }
+      75% { fill:#eef3ff; }
+    }
+    @keyframes skipOutlinePulse {
+      0%, 100% { stroke:rgba(138,180,255,0.45); stroke-width:5; }
+      40% { stroke:rgba(255,255,255,0.85); stroke-width:6.5; }
+      60% { stroke:rgba(255,182,46,0.7); stroke-width:6; }
+    }
+    @keyframes skipJiggleLeft {
+      0%, 100% { transform: scaleX(-1) translate(0, 0); }
+      40% { transform: scaleX(-1) translate(-6%, -6%); }
+      70% { transform: scaleX(-1) translate(4%, 4%); }
+    }
+    @keyframes skipJiggleRight {
+      0%, 100% { transform: translate(0, 0); }
+      40% { transform: translate(6%, -5%); }
+      70% { transform: translate(-4%, 4%); }
+    }
+    @keyframes skipCenterPulse {
+      0%, 100% { box-shadow:0 0 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,255,255,0.35); }
+      45% { box-shadow:0 0 26px rgba(138,180,255,0.75), 0 0 36px rgba(255,255,255,0.6); }
+      65% { box-shadow:0 0 24px rgba(255,182,46,0.65), 0 0 34px rgba(255,255,255,0.5); }
+    }
 
     /* Debug toast */
     .toast{ position:fixed; right:14px; top:14px; background:rgba(18,18,18,.9); color:#cbd5e1; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px 12px; font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; z-index: 9; box-shadow: 0 10px 24px rgba(0,0,0,.35); pointer-events:none; opacity:.95; max-width: 42ch; }
@@ -201,9 +242,21 @@
   <div id="fallback" class="fallback" style="display:none">⚠️ WebGL unavailable or ES Modules not supported. Try a newer browser/GPU.</div>
 
   <div id="play" class="play"><button id="playBtn">Play</button></div>
-    <div id="skipBtn" class="skip-btn hidden">
-        <div class="skip-triangle skip-triangle--left" id="skipTriangle1"></div>
-        <div class="skip-triangle skip-triangle--right" id="skipTriangle2"></div>
+    <div id="skipBtn" class="skip-btn hidden" role="button" aria-label="Skip intro" tabindex="0">
+        <div class="skip-triangle skip-triangle--left" id="skipTriangle1">
+          <div class="skip-triangle__inner">
+            <svg viewBox="0 0 100 86.602" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <polygon points="0,43.301 100,0 100,86.602"></polygon>
+            </svg>
+          </div>
+        </div>
+        <div class="skip-triangle skip-triangle--right" id="skipTriangle2">
+          <div class="skip-triangle__inner">
+            <svg viewBox="0 0 100 86.602" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <polygon points="0,43.301 100,0 100,86.602"></polygon>
+            </svg>
+          </div>
+        </div>
     </div>
   <div id="toast" class="toast" style="display:none"></div>
 
@@ -1556,6 +1609,11 @@
     
     function transformCelliToYellow() {
         // Transform all voxels to yellow with rounded corners, pop shrink/burst animation
+        const skipBtn = document.getElementById('skipBtn');
+        if (skipBtn) {
+            skipBtn.classList.add('illuminating');
+        }
+
         voxels.forEach((voxel, idx) => {
             const data = voxel.userData;
             const delay = idx * 15; // Stagger transformation
@@ -4449,7 +4507,12 @@ RRRR            RRRR`;
         burstTimeout = null;
         breakApartStarted = true;
         riseStartTime = Date.now();
-        
+
+        const skipBtn = document.getElementById('skipBtn');
+        if (skipBtn) {
+            skipBtn.classList.remove('illuminating');
+        }
+
         // Increase afterimage effect for dramatic trails
         afterimagePass.uniforms.damp.value = 0.88;
         
@@ -4745,7 +4808,7 @@ RRRR            RRRR`;
     // --- Skip button logic ---------------------------------------------------
     skipBtn.addEventListener('click', () => {
       if (!running) return;
-      
+
       // Jump to CELLI phase
       totalTime = introCfg.celliEnd - 6.0; // Start 6 seconds before celli ends (during trickle/chime)
       
@@ -4769,6 +4832,13 @@ RRRR            RRRR`;
       setTimeout(() => {
         playStartupBass();
       }, 500);
+    });
+
+    skipBtn.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        skipBtn.click();
+      }
     });
 
     // --- Bring-up Self‑Tests & Toast ---------------------------------------
